@@ -1,0 +1,25 @@
+{
+  "dependencies": {
+    "com.cysharp.messagepipe": "1.8.1",
+    "com.cysharp.unitask": "2.5.5",
+    "com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional",
+    "com.unity.addressables": "1.22.2",
+    "com.unity.ide.rider": "3.0.31",
+    "com.unity.ide.visualstudio": "2.0.22",
+    "com.unity.test-framework": "1.1.33",
+    "jp.hadashikick.vcontainer": "1.16.3",
+    "com.cysharp.messagepipe.vcontainer": "1.8.1"
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.cysharp.messagepipe",
+        "com.cysharp.messagepipe.vcontainer",
+        "com.cysharp.unitask",
+        "jp.hadashikick.vcontainer"
+      ]
+    }
+  ]
+}

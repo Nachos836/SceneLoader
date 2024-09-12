@@ -1,0 +1,12 @@
+{
+	"name": "com.nachos836.scene-loader",
+	"displayName": "Unity Scene Loader",
+	"version": "0.0.0",
+	"unity": "2022.3",
+	"description": "Declarative Unity Scene Loader implementation with IOC in mind",
+	"keywords": ["Scene", "Loading", "Scene Loader"],
+	"license": "MIT",
+	"documentationUrl": "https://github.com/Nachos836/SceneLoader",
+	"changelogUrl": "https://github.com/Nachos836/SceneLoader/releases",
+	"licensesUrl": "https://github.com/Nachos836/SceneLoader/blob/master/LICENSE"
+}
