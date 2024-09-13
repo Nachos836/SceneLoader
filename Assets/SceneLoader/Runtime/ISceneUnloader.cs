@@ -2,12 +2,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Functional.Async;
+using Functional.Core.Outcome;
 
 namespace SceneLoader
 {
-    using Functional;
-    using Functional.Outcome;
-
     /// <typeparam name="TSceneKey">TSceneKey is used for the sake of polymorphism. It makes it easy to find an appropriate type when using DI</typeparam>
     [SuppressMessage("ReSharper", "UnusedTypeParameter")]
     public interface ISceneUnloader<TSceneKey> where TSceneKey : struct, ISceneKey

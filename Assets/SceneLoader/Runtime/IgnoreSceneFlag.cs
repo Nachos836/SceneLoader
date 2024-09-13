@@ -2,5 +2,5 @@
 
 namespace SceneLoader
 {
-    internal sealed class IgnoreSceneFlag : MonoBehaviour { }
+    public sealed class IgnoreSceneFlag : MonoBehaviour { }
 }

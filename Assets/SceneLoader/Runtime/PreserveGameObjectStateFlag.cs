@@ -2,5 +2,5 @@
 
 namespace SceneLoader
 {
-    internal sealed class PreserveGameObjectStateFlag : MonoBehaviour { }
+    public sealed class PreserveGameObjectStateFlag : MonoBehaviour { }
 }

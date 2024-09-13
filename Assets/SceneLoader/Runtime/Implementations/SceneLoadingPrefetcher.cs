@@ -1,13 +1,13 @@
 ﻿using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Functional.Async;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 using VContainer.Unity;
-using Functional;
 
-namespace SceneLoader.Operations
+namespace SceneLoader.Implementations
 {
     public readonly ref struct SceneLoadingPrefetcher
     {

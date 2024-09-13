@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Functional.Async;
+using Functional.Core.Outcome;
 using MessagePipe;
 using UnityEngine.ResourceManagement.ResourceProviders;
-using Functional;
-using Functional.Outcome;
 
-namespace SceneLoader.Operations
+namespace SceneLoader.Implementations
 {
     public abstract class ActivatorBasedSceneLoader<TSceneKey> : ISceneLoader<TSceneKey>, ISceneLoadedEvent<TSceneKey>, IDisposable where TSceneKey : struct, ISceneKey
     {

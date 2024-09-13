@@ -3,14 +3,14 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Functional.Async;
+using Functional.Core.Outcome;
 using MessagePipe;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using VContainer.Unity;
-using Functional;
-using Functional.Outcome;
 
-namespace SceneLoader.Operations
+namespace SceneLoader.Implementations
 {
     public abstract class SceneUnloader<TSceneKey> : IAsyncStartable, ISceneUnloader<TSceneKey>, ISceneUnloadedEvent<TSceneKey>, IDisposable where TSceneKey : struct, ISceneKey
     {

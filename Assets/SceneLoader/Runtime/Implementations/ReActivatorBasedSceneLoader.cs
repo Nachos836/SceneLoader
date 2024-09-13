@@ -4,12 +4,12 @@ using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Functional.Async;
+using Functional.Core.Outcome;
 using MessagePipe;
 using UnityEngine.ResourceManagement.ResourceProviders;
-using Functional;
-using Functional.Outcome;
 
-namespace SceneLoader.Operations
+namespace SceneLoader.Implementations
 {
     public abstract class ReActivatorBasedSceneLoader<TSceneKey> : ISceneLoader<TSceneKey>, ISceneLoadedEvent<TSceneKey>, IDisposable where TSceneKey : struct, ISceneKey
     {

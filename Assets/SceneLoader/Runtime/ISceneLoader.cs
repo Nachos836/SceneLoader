@@ -2,8 +2,8 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Functional;
-using Functional.Outcome;
+using Functional.Async;
+using Functional.Core.Outcome;
 
 namespace SceneLoader
 {

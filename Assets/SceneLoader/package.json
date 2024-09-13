@@ -1,7 +1,7 @@
 {
 	"name": "com.nachos836.scene-loader",
 	"displayName": "Unity Scene Loader",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"unity": "2022.3",
 	"description": "Declarative Unity Scene Loader implementation with IOC in mind",
 	"keywords": ["Scene", "Loading", "Scene Loader"],
