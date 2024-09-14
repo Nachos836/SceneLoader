@@ -7,17 +7,19 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
+using Scene = UnityEngine.SceneManagement.Scene;
+
 namespace SceneLoader.Editor
 {
-    using Scene = UnityEngine.SceneManagement.Scene;
+    using Abstract;
 
     [InitializeOnLoad]
     public static class SceneWorkflow
     {
         private const string EditModeScenesKey = nameof(SceneWorkflow) + "." + nameof(EditModeScenes);
 
-        private static readonly Func<GameObject, bool> ContainsIgnoreFlag = static candidate => candidate.TryGetComponent(out IgnoreSceneFlag _);
-        private static readonly Func<GameObject,bool> HasNoPreserveFlag = static candidate => candidate.TryGetComponent(out PreserveGameObjectStateFlag _) is false;
+        private static readonly Func<GameObject, bool> ContainsIgnoreFlag = static candidate => candidate.TryGetComponent(out IIgnoreSceneFlag _);
+        private static readonly Func<GameObject,bool> HasNoPreserveFlag = static candidate => candidate.TryGetComponent(out IPreserveGameObjectStateFlag _) is false;
 
         private static IEnumerable<string> EditModeScenes
         {

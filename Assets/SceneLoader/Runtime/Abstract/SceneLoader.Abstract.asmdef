@@ -1,5 +1,5 @@
 {
-    "name": "SceneLoader",
+    "name": "SceneLoader.Abstract",
     "rootNamespace": "",
     "references": [
         "GUID:e067a5240a5d42b4bbaa0ddadcdd8d3e",
@@ -14,5 +14,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": false
+    "noEngineReferences": true
 }

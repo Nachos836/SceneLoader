@@ -9,15 +9,16 @@ using Functional.Core.Outcome;
 using MessagePipe;
 using UnityEngine.ResourceManagement.ResourceProviders;
 
-namespace SceneLoader.Implementations
+namespace SceneLoader.Addressables
 {
-    public abstract class ReActivatorBasedSceneLoader<TSceneKey> : ISceneLoader<TSceneKey>, ISceneLoadedEvent<TSceneKey>, IDisposable where TSceneKey : struct, ISceneKey
+    using Abstract;
+
+    public abstract class ReActivatorBasedSceneLoader<TSceneKey> : ISceneLoader<TSceneKey>, ISceneLoadedEvent<TSceneKey>, IDisposable where TSceneKey : class, ISceneKey
     {
         private readonly SceneLoadingPrefetcher.ActivationHandler _activationHandler;
         private readonly IAsyncPublisher<ISceneKey, SceneInstance> _loadedScenes;
-        private readonly ISceneKey _key;
-        private readonly IDisposableAsyncPublisher<None> _loadedPublisher;
-        private readonly IAsyncSubscriber<None> _loadedSubscriber;
+        private readonly TSceneKey _key;
+        private readonly (IDisposableAsyncPublisher<None> Publisher, IAsyncSubscriber<None> Subscriber) _currentSceneLoaded;
 
         private SceneReActivator? _reActivationHandler;
 
@@ -31,7 +32,7 @@ namespace SceneLoader.Implementations
             _activationHandler = activationHandler;
             _loadedScenes = loadedScenes;
             _key = key;
-            (_loadedPublisher, _loadedSubscriber) = eventFactory.CreateAsyncEvent<None>();
+            _currentSceneLoaded = eventFactory.CreateAsyncEvent<None>();
         }
 
         /// <summary>
@@ -45,31 +46,35 @@ namespace SceneLoader.Implementations
 
             try
             {
-                if (_reActivationHandler is { } scene)
+                if (_reActivationHandler is { } candidate)
                 {
-                    return await scene.ActivateAsync(_loadedPublisher, cancellation);
+                    return await candidate.ActivateAsync(_currentSceneLoaded.Publisher, cancellation);
                 }
 
                 var activation = await _activationHandler.ActivateAsync(cancellation);
 
-                return await activation
-                    .Attach(_loadedPublisher)
-                    .Run((instance, loadedPublisher, token) =>
+                _reActivationHandler = activation.Match<SceneReActivator?>
+                (
+                    success: static scene => new SceneReActivator(scene),
+                    cancellation: static () => null,
+                    error: static _ => null
+                );
+
+                return await activation.Attach(_currentSceneLoaded.Publisher)
+                    .Run(static (scene, sceneLoaded, token) =>
                     {
                         if (token.IsCancellationRequested) return AsyncResult<SceneInstance>.Cancel;
 
-                        loadedPublisher.PublishAsync(Expected.None, token)
+                        sceneLoaded.PublishAsync(Expected.None, token)
                             .SuppressCancellationThrow()
                             .Forget();
 
-                        _reActivationHandler = new SceneReActivator(instance);
-
-                        return AsyncResult<SceneInstance>.FromResult(instance);
+                        return AsyncResult<SceneInstance>.FromResult(scene);
                     })
-                    .Attach(_loadedScenes, _key)
-                    .RunAsync(static (instance, loadedScenes, key, token) =>
+                    .Attach(_key, _loadedScenes)
+                    .RunAsync(static (scene, key, loadedScenes, token) =>
                     {
-                        return loadedScenes.PublishAsync(key, instance, token)
+                        return loadedScenes.PublishAsync(key, scene, token)
                             .SuppressCancellationThrow()
                             .ContinueWith(static isCanceled => isCanceled is not true
                                 ? AsyncResult.Success
@@ -85,12 +90,12 @@ namespace SceneLoader.Implementations
 
         IDisposable ISceneLoadedEvent<TSceneKey>.Subscribe(Func<None, CancellationToken, UniTask> whenLoaded)
         {
-            return _loadedSubscriber.Subscribe(whenLoaded);
+            return _currentSceneLoaded.Subscriber.Subscribe(whenLoaded);
         }
 
         public virtual void Dispose()
         {
-            _loadedPublisher.Dispose();
+            _currentSceneLoaded.Publisher.Dispose();
         }
 
         private sealed class SceneReActivator

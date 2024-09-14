@@ -1,5 +1,5 @@
 {
-    "name": "SceneLoader.Implementations",
+    "name": "SceneLoader.Addressables",
     "rootNamespace": "",
     "references": [
         "GUID:5e29d4a26ec4384439f7dc66829e3e41",

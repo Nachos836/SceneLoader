@@ -7,7 +7,7 @@ using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 using VContainer.Unity;
 
-namespace SceneLoader.Implementations
+namespace SceneLoader.Addressables
 {
     public readonly ref struct SceneLoadingPrefetcher
     {

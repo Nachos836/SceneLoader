@@ -1,22 +1,19 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
 using Functional.Core.Outcome;
 
-namespace SceneLoader
+namespace SceneLoader.Abstract
 {
     /// <typeparam name="TSceneKey">TSceneKey is used for the sake of polymorphism. It makes it easy to find an appropriate type when using DI</typeparam>
-    [SuppressMessage("ReSharper", "UnusedTypeParameter")]
-    public interface ISceneLoader<TSceneKey> where TSceneKey : struct, ISceneKey
+    public interface ISceneLoader<in TSceneKey> where TSceneKey : class, ISceneKey
     {
         UniTask<AsyncResult> LoadAsync(CancellationToken cancellation = default);
     }
 
     /// <typeparam name="TSceneKey">TSceneKey is used for the sake of polymorphism. It makes it easy to find an appropriate type when using DI</typeparam>
-    [SuppressMessage("ReSharper", "UnusedTypeParameter")]
-    public interface ISceneLoadedEvent<out TSceneKey> where TSceneKey : struct, ISceneKey
+    public interface ISceneLoadedEvent<in TSceneKey> where TSceneKey : class, ISceneKey
     {
         IDisposable Subscribe(Func<None, CancellationToken, UniTask> whenLoaded);
     }

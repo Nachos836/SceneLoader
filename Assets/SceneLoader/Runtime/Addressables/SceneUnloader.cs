@@ -6,21 +6,21 @@ using Cysharp.Threading.Tasks;
 using Functional.Async;
 using Functional.Core.Outcome;
 using MessagePipe;
-using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using VContainer.Unity;
 
-namespace SceneLoader.Implementations
+namespace SceneLoader.Addressables
 {
-    public abstract class SceneUnloader<TSceneKey> : IAsyncStartable, ISceneUnloader<TSceneKey>, ISceneUnloadedEvent<TSceneKey>, IDisposable where TSceneKey : struct, ISceneKey
+    using Abstract;
+
+    public abstract class SceneUnloader<TSceneKey> : IAsyncStartable, ISceneUnloader<TSceneKey>, ISceneUnloadedEvent<TSceneKey>, IDisposable where TSceneKey : class, ISceneKey
     {
         private readonly PlayerLoopTiming _initializationPoint;
         private readonly IAsyncSubscriber<ISceneKey, SceneInstance> _loadedScenes;
-        private readonly ISceneKey _key;
-        private readonly IDisposableAsyncPublisher<None> _unloadedPublisher;
-        private readonly IAsyncSubscriber<None> _unloadedSubscriber;
+        private readonly TSceneKey _key;
+        private readonly (IDisposableAsyncPublisher<None> Publisher, IAsyncSubscriber<None> Notifier) _currentSceneUnloaded;
 
-        private SceneInstance? _instance;
+        private SceneInstance? _scene;
         private IDisposable? _subscription;
 
         private SceneUnloader
@@ -33,7 +33,7 @@ namespace SceneLoader.Implementations
             _initializationPoint = initializationPoint;
             _loadedScenes = loadedScenes;
             _key = key;
-            (_unloadedPublisher, _unloadedSubscriber) = eventFactory.CreateAsyncEvent<None>();
+            _currentSceneUnloaded = eventFactory.CreateAsyncEvent<None>();
         }
 
         async UniTask IAsyncStartable.StartAsync(CancellationToken cancellation)
@@ -42,11 +42,11 @@ namespace SceneLoader.Implementations
                 .SuppressCancellationThrow()) return;
 
             _subscription?.Dispose();
-            _subscription = _loadedScenes.Subscribe(_key, (instance, token) =>
+            _subscription = _loadedScenes.Subscribe(_key, (scene, token) =>
             {
                 if (token.IsCancellationRequested) return UniTask.CompletedTask;
 
-                _instance = instance;
+                _scene = scene;
 
                 return UniTask.CompletedTask;
             });
@@ -54,13 +54,14 @@ namespace SceneLoader.Implementations
 
         UniTask<AsyncRichResult> ISceneUnloader<TSceneKey>.UnloadAsync(CancellationToken cancellation)
         {
-            if (_instance is not { Scene: { isLoaded: true } }) return UniTask.FromResult(AsyncRichResult.FromFailure(new Expected.Failure("Scene wasn't active to be unloaded")));
+            if (_scene is null) return UniTask.FromResult<AsyncRichResult>(new Exception("Scene wasn't loaded"));
+            if (_scene is not { Scene: { isLoaded: true } }) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene wasn't active to be unloaded"));
             if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);
 
-            return RoutineAsync(_instance.Value, cancellation)
+            return RoutineAsync(_scene.Value, cancellation)
                 .ContinueWith(result => result.Run(() =>
                 {
-                    _unloadedPublisher.PublishAsync(Expected.None, cancellation)
+                    _currentSceneUnloaded.Publisher.PublishAsync(Expected.None, cancellation)
                         .SuppressCancellationThrow()
                         .Forget();
                 }));
@@ -68,14 +69,14 @@ namespace SceneLoader.Implementations
 
         IDisposable ISceneUnloadedEvent<TSceneKey>.Subscribe(Func<None, CancellationToken, UniTask> whenUnloaded)
         {
-            return _unloadedSubscriber.Subscribe(whenUnloaded);
+            return _currentSceneUnloaded.Notifier.Subscribe(whenUnloaded);
         }
 
         protected abstract UniTask<AsyncRichResult> RoutineAsync(SceneInstance instance, CancellationToken cancellation);
 
         public virtual void Dispose()
         {
-            _unloadedPublisher.Dispose();
+            _currentSceneUnloaded.Publisher.Dispose();
             _subscription?.Dispose();
             _subscription = null;
         }
@@ -89,7 +90,7 @@ namespace SceneLoader.Implementations
             {
                 if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);
 
-                return Addressables.UnloadSceneAsync(instance)
+                return UnityEngine.AddressableAssets.Addressables.UnloadSceneAsync(instance)
                     .ToUniTask(progress: null!, PlayerLoopTiming.Initialization, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
                     .SuppressCancellationThrow()
                     .ContinueWith(static operation => operation.IsCanceled is not true
