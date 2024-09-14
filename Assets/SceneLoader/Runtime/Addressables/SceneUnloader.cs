@@ -81,7 +81,7 @@ namespace SceneLoader.Addressables
             _subscription = null;
         }
 
-        internal abstract class Complete : SceneUnloader<TSceneKey>
+        public abstract class Complete : SceneUnloader<TSceneKey>
         {
             protected Complete(PlayerLoopTiming initializationPoint, IAsyncSubscriber<ISceneKey, SceneInstance> loadedScenes, EventFactory eventFactory, TSceneKey scopeKey)
                 : base(initializationPoint, loadedScenes, eventFactory, scopeKey) { }
@@ -99,7 +99,7 @@ namespace SceneLoader.Addressables
             }
         }
 
-        internal abstract class Deactivate : SceneUnloader<TSceneKey>
+        public abstract class Deactivate : SceneUnloader<TSceneKey>
         {
             protected Deactivate(PlayerLoopTiming initializationPoint, IAsyncSubscriber<ISceneKey, SceneInstance> loadedScenes, EventFactory eventFactory, TSceneKey key)
                 : base(initializationPoint, loadedScenes, eventFactory, key) { }
