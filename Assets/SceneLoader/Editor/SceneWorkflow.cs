@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine;
+
+using static UnityEditor.EditorApplication;
+using static UnityEditor.SceneManagement.EditorSceneManager;
 
 using Scene = UnityEngine.SceneManagement.Scene;
 
@@ -18,9 +20,6 @@ namespace SceneLoader.Editor
     {
         private const string EditModeScenesKey = nameof(SceneWorkflow) + "." + nameof(EditModeScenes);
 
-        private static readonly Func<GameObject, bool> ContainsIgnoreFlag = static candidate => candidate.TryGetComponent(out IIgnoreSceneFlag _);
-        private static readonly Func<GameObject,bool> HasNoPreserveFlag = static candidate => candidate.TryGetComponent(out IPreserveGameObjectStateFlag _) is false;
-
         private static IEnumerable<string> EditModeScenes
         {
             set => EditorPrefs.SetString(EditModeScenesKey, string.Join("|", value));
@@ -29,18 +28,18 @@ namespace SceneLoader.Editor
 
         static SceneWorkflow()
         {
-            EditorSceneManager.sceneOpened -= EnableRootGameObjects;
-            EditorSceneManager.sceneSaved -= EnableRootGameObjects;
-            EditorSceneManager.sceneSaving -= DisableRootGameObjects;
-            EditorApplication.playModeStateChanged -= SwitchPlayModeScenes;
+            sceneOpened -= BeforeSceneEdited;
+            sceneSaved -= BeforeSceneEdited;
+            sceneSaving -= AfterSceneEdited;
+            playModeStateChanged -= EnterAndExitEditorSwitching;
 
-            EditorApplication.playModeStateChanged += SwitchPlayModeScenes;
-            EditorSceneManager.sceneSaving += DisableRootGameObjects;
-            EditorSceneManager.sceneSaved += EnableRootGameObjects;
-            EditorSceneManager.sceneOpened += EnableRootGameObjects;
+            playModeStateChanged += EnterAndExitEditorSwitching;
+            sceneSaving += AfterSceneEdited;
+            sceneSaved += BeforeSceneEdited;
+            sceneOpened += BeforeSceneEdited;
         }
 
-        private static void SwitchPlayModeScenes(PlayModeStateChange state)
+        private static void EnterAndExitEditorSwitching(PlayModeStateChange state)
         {
             var scenes = EditorSceneManagerUtility.GetAllScenes()
                 .Where(static scene => scene.isLoaded)
@@ -71,58 +70,70 @@ namespace SceneLoader.Editor
             {
                 EditModeScenes = scenes.Select(static scene => scene.path);
 
-                if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                if (SaveCurrentModifiedScenesIfUserWantsTo())
                 {
                     EditorSceneManager.OpenScene(EditorBuildSettings.scenes[0].path);
                 }
                 else
                 {
-                    EditorApplication.isPlaying = false;
+                    isPlaying = false;
                 }
             }
 
             static void RestoreEditModeScenes()
             {
                 var scenes = EditModeScenes.ToArray();
-                EditorSceneManager.OpenScene(scenes.First(), OpenSceneMode.Single);
+                OpenScene(scenes.First(), OpenSceneMode.Single);
 
                 foreach (var scene in scenes.Skip(1))
                 {
-                    EditorSceneManager.OpenScene(scene, OpenSceneMode.Additive);
+                    OpenScene(scene, OpenSceneMode.Additive);
                 }
             }
         }
 
-        private static void EnableRootGameObjects(Scene scene, OpenSceneMode _) => EnableRootGameObjects(scene);
+        private static void BeforeSceneEdited(Scene scene, OpenSceneMode _) => BeforeSceneEdited(scene);
 
-        private static void EnableRootGameObjects(Scene scene)
+        private static void BeforeSceneEdited(Scene scene)
         {
             if (BuildPipeline.isBuildingPlayer) return;
             if (scene.buildIndex == 0) return;
 
-            var candidates = scene.GetRootGameObjects();
+            var candidates = scene.GetRootGameObjects()
+                .Select(static root => root.TryGetComponent<IBeforeSceneEdited>(out var candidate)
+                    ? candidate
+                    : SceneEdited.NoneComponent);
 
-            if (ReferenceEquals(candidates.SingleOrDefault(ContainsIgnoreFlag), null) is false) return;
-
-            foreach (var candidate in candidates.Where(HasNoPreserveFlag))
+            foreach (var candidate in candidates)
             {
-                candidate.SetActive(true);
+                candidate.Execute();
             }
         }
 
-        private static void DisableRootGameObjects(Scene scene, string path)
+        private static void AfterSceneEdited(Scene scene, string _)
         {
             if (BuildPipeline.isBuildingPlayer) return;
             if (scene.buildIndex == 0) return;
 
-            var candidates = scene.GetRootGameObjects();
+            var candidates = scene.GetRootGameObjects()
+                .Select(static root => root.TryGetComponent<IAfterSceneEdited>(out var candidate)
+                    ? candidate
+                    : SceneEdited.NoneComponent);
 
-            if (ReferenceEquals(candidates.SingleOrDefault(ContainsIgnoreFlag), null) is false) return;
-
-            foreach (var candidate in candidates.Where(HasNoPreserveFlag))
+            foreach (var candidate in candidates)
             {
-                candidate.SetActive(false);
+                candidate.Execute();
             }
+        }
+    }
+
+    internal static class SceneEdited
+    {
+        public static None NoneComponent { get; } = new ();
+
+        public sealed class None : IAfterSceneEdited, IBeforeSceneEdited
+        {
+            public void Execute() { }
         }
     }
 }
