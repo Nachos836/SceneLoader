@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine;
 
 using static UnityEditor.EditorApplication;
 using static UnityEditor.SceneManagement.EditorSceneManager;
@@ -20,6 +21,11 @@ namespace SceneLoader.Editor
     {
         private const string EditModeScenesKey = nameof(SceneWorkflow) + "." + nameof(EditModeScenes);
 
+        private static readonly SceneOpenedCallback BeforeSceneEditedCallback = (scene, _) => BeforeSceneEdited(scene);
+        private static readonly SceneSavedCallback BeforeSceneSavedCallback = BeforeSceneEdited;
+        private static readonly SceneSavingCallback AfterSceneEditedCallback = AfterSceneEdited;
+        private static readonly Action<PlayModeStateChange> EnterAndExitEditorSwitchingCallback = EnterAndExitEditorSwitching;
+
         private static IEnumerable<string> EditModeScenes
         {
             set => EditorPrefs.SetString(EditModeScenesKey, string.Join("|", value));
@@ -28,15 +34,15 @@ namespace SceneLoader.Editor
 
         static SceneWorkflow()
         {
-            sceneOpened -= BeforeSceneEdited;
-            sceneSaved -= BeforeSceneEdited;
-            sceneSaving -= AfterSceneEdited;
-            playModeStateChanged -= EnterAndExitEditorSwitching;
+            sceneOpened -= BeforeSceneEditedCallback;
+            sceneSaved -= BeforeSceneSavedCallback;
+            sceneSaving -= AfterSceneEditedCallback;
+            playModeStateChanged -= EnterAndExitEditorSwitchingCallback;
 
-            playModeStateChanged += EnterAndExitEditorSwitching;
-            sceneSaving += AfterSceneEdited;
-            sceneSaved += BeforeSceneEdited;
-            sceneOpened += BeforeSceneEdited;
+            playModeStateChanged += EnterAndExitEditorSwitchingCallback;
+            sceneSaving += AfterSceneEditedCallback;
+            sceneSaved += BeforeSceneSavedCallback;
+            sceneOpened += BeforeSceneEditedCallback;
         }
 
         private static void EnterAndExitEditorSwitching(PlayModeStateChange state)
@@ -72,7 +78,7 @@ namespace SceneLoader.Editor
 
                 if (SaveCurrentModifiedScenesIfUserWantsTo())
                 {
-                    EditorSceneManager.OpenScene(EditorBuildSettings.scenes[0].path);
+                    EditorSceneManager.OpenScene(EditorBuildSettings.scenes.First().path);
                 }
                 else
                 {
@@ -92,21 +98,22 @@ namespace SceneLoader.Editor
             }
         }
 
-        private static void BeforeSceneEdited(Scene scene, OpenSceneMode _) => BeforeSceneEdited(scene);
-
         private static void BeforeSceneEdited(Scene scene)
         {
             if (BuildPipeline.isBuildingPlayer) return;
             if (scene.buildIndex == 0) return;
 
             var candidates = scene.GetRootGameObjects()
-                .Select(static root => root.TryGetComponent<IBeforeSceneEdited>(out var candidate)
-                    ? candidate
-                    : SceneEdited.NoneComponent);
+                .Where(static root => root.TryGetComponent<IBeforeSceneEdited>(out _))
+                .Select(static root => root.GetComponent<IBeforeSceneEdited>());
 
             foreach (var candidate in candidates)
             {
-                candidate.Execute();
+                candidate.ExecuteInEditor().Match
+                (
+                    success: static () => {},
+                    error: static exception => Debug.LogError(exception)
+                );
             }
         }
 
@@ -116,24 +123,17 @@ namespace SceneLoader.Editor
             if (scene.buildIndex == 0) return;
 
             var candidates = scene.GetRootGameObjects()
-                .Select(static root => root.TryGetComponent<IAfterSceneEdited>(out var candidate)
-                    ? candidate
-                    : SceneEdited.NoneComponent);
+                .Where(static root => root.TryGetComponent<IAfterSceneEdited>(out var _))
+                .Select(static root => root.GetComponent<IAfterSceneEdited>());
 
             foreach (var candidate in candidates)
             {
-                candidate.Execute();
+                candidate.ExecuteInEditor().Match
+                (
+                    success: static () => {},
+                    error: static exception => Debug.LogError(exception)
+                );
             }
-        }
-    }
-
-    internal static class SceneEdited
-    {
-        public static None NoneComponent { get; } = new ();
-
-        public sealed class None : IAfterSceneEdited, IBeforeSceneEdited
-        {
-            public void Execute() { }
         }
     }
 }

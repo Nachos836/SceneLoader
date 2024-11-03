@@ -2,9 +2,8 @@
     "name": "SceneLoader.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:f51ebe6a0ceec4240a699833d6309b23",
-        "GUID:593a5b492d29ac6448b1ebf7f035ef33",
-        "GUID:5e29d4a26ec4384439f7dc66829e3e41"
+        "GUID:5e29d4a26ec4384439f7dc66829e3e41",
+        "GUID:e067a5240a5d42b4bbaa0ddadcdd8d3e"
     ],
     "includePlatforms": [
         "Editor"
