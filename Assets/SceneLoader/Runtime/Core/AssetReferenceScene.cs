@@ -62,6 +62,8 @@ namespace SceneLoader.Core
                     || root.TryGetComponent<ISceneUnloaded>(out _);
             });
 
+            if (scene.buildIndex == -1) return requiresCustomFlow;
+
             UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, removeScene: true);
 
             return requiresCustomFlow;

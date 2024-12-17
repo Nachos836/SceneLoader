@@ -46,7 +46,8 @@ namespace SceneLoader.Core
         private Activated.Custom _activated = default!;
         private Deactivated.Custom _deactivated = default!;
 
-        public AsyncRichResult LastOperation { get; private set; } = AsyncRichResult.Success;
+        [Pure] public IDisposable LoadedSubscribe(Action whenLoaded) => _loadedEvent.Subscribe(whenLoaded);
+        [Pure] public IDisposable UnloadedSubscribe(Action whenUnloaded) => _unloadedEvent.Subscribe(whenUnloaded);
 
         public SceneCodeBindings<TSceneKey> CreateCodeBindings<TSceneKey>() where TSceneKey : class, ISceneKey
         {
@@ -102,14 +103,9 @@ namespace SceneLoader.Core
             }
         }
 
-        /// <summary>
-        /// Make sure to provide CancellationToken which can track Application Exit
-        /// </summary>
-        /// <param name="cancellation"></param>
-        /// <returns></returns>
         public async UniTask<AsyncRichResult> LoadAsync(CancellationToken cancellation)
         {
-            LastOperation = await _stateMachineFrozen!.TransitAsync<Activate>(cancellation);
+            LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Activate>(cancellation));
 
             if (LastOperation.IsSuccessful)
             {
@@ -118,15 +114,10 @@ namespace SceneLoader.Core
             return LastOperation;
         }
 
-        [Pure]
-        public IDisposable LoadedSubscribe(Action whenLoaded)
-        {
-            return _loadedEvent.Subscribe(whenLoaded);
-        }
 
         public async UniTask<AsyncRichResult> UnloadAsync(CancellationToken cancellation)
         {
-            LastOperation = await _stateMachineFrozen!.TransitAsync<Deactivate>(cancellation);
+            LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Deactivate>(cancellation));
 
             if (LastOperation.IsSuccessful)
             {
@@ -135,16 +126,120 @@ namespace SceneLoader.Core
             return LastOperation;
         }
 
-        [Pure]
-        public IDisposable UnloadedSubscribe(Action whenUnloaded)
-        {
-            return _unloadedEvent.Subscribe(whenUnloaded);
-        }
-
         public async UniTask<AsyncRichResult> CompletelyUnloadAsync(CancellationToken cancellation)
         {
-            return LastOperation = await _stateMachineFrozen!.TransitAsync<Unload>(cancellation);
+            return LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Unload>(cancellation));
         }
+
+        /// <summary>
+        /// This section refers to API, designed to use in Unity Editor with UnityEvent
+        /// </summary>
+        #region Sync API
+
+        public AsyncRichResult LastOperation { get; private set; } = AsyncRichResult.Success;
+        public CancellationToken ApplicationLifetime { private get; set; } = CancellationToken.None;
+
+        public void Prefetch()
+        {
+            PerformRoutineAsync(ApplicationLifetime)
+                .Forget();
+
+            async UniTask PerformRoutineAsync(CancellationToken token = default)
+            {
+                var result = await PrefetchAsync(token);
+                var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
+                    ? instance.Scene.name
+                    : "undetermined";
+
+                var exception = result.Match<Exception?>
+                (
+                    success: static _ => null,
+                    cancellation: () => new OperationCanceledException($"Scene: \"{sceneName}\" [PREFETCHING] Canceled!"),
+                    failure: failure => new InvalidOperationException($"Scene: \"{sceneName}\" [PREFETCHING] Not happen: {failure.Message}", failure.AsException()),
+                    error: exception => new AggregateException($"Scene: \"{sceneName}\" [PREFETCHING] Error occured: ", exception),
+                    token
+                );
+
+                if (exception is not null) throw exception;
+            }
+        }
+
+        public void Load()
+        {
+            PerformRoutineAsync(ApplicationLifetime)
+                .Forget();
+
+            async UniTask PerformRoutineAsync(CancellationToken token = default)
+            {
+                var result = await LoadAsync(token);
+                var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
+                    ? instance.Scene.name
+                    : "undetermined";
+
+                var exception = result.Match<Exception?>
+                (
+                    success: static _ => null,
+                    cancellation: () => new OperationCanceledException($"Scene: \"{sceneName}\" [LOADING] Canceled!"),
+                    failure: failure => new InvalidOperationException($"Scene: \"{sceneName}\" [LOADING] Not happen: {failure.Message}", failure.AsException()),
+                    error: exception => new AggregateException($"Scene: \"{sceneName}\" [LOADING] Error occured: ", exception),
+                    token
+                );
+
+                if (exception is not null) throw exception;
+            }
+        }
+
+        public void Unload()
+        {
+            PerformRoutineAsync(ApplicationLifetime)
+                .Forget();
+
+            async UniTask PerformRoutineAsync(CancellationToken token = default)
+            {
+                var result = await UnloadAsync(token);
+                var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
+                    ? instance.Scene.name
+                    : "undetermined";
+
+                var exception = result.Match<Exception?>
+                (
+                    success: static _ => null,
+                    cancellation: () => new OperationCanceledException($"Scene: \"{sceneName}\" [UNLOADING] Canceled!"),
+                    failure: failure => new InvalidOperationException($"Scene: \"{sceneName}\" [UNLOADING] Not happen: {failure.Message}", failure.AsException()),
+                    error: exception => new AggregateException($"Scene: \"{sceneName}\" [UNLOADING] Error occured: ", exception),
+                    token
+                );
+
+                if (exception is not null) throw exception;
+            }
+        }
+
+        public void CompletelyUnload()
+        {
+            PerformRoutineAsync(ApplicationLifetime)
+                .Forget();
+
+            async UniTask PerformRoutineAsync(CancellationToken token = default)
+            {
+                var result = await CompletelyUnloadAsync(token);
+                var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
+                    ? instance.Scene.name
+                    : "undetermined";
+
+                var exception = result.Match<Exception?>
+                (
+                    success: static _ => null,
+                    cancellation: () => new OperationCanceledException($"Scene: \"{sceneName}\" [COMPLETE UNLOADING] Canceled!"),
+                    failure: failure => new InvalidOperationException($"Scene: \"{sceneName}\" [COMPLETE UNLOADING] Not happen: {failure.Message}", failure.AsException()),
+                    error: exception => new AggregateException($"Scene: \"{sceneName}\" [COMPLETE UNLOADING] Error occured: ", exception),
+                    token
+                );
+
+                if (exception is not null) throw exception;
+            }
+        }
+
+        #endregion
 
         private async UniTask<AsyncRichResult> BootstrapAsync(CancellationToken cancellation = default)
         {
