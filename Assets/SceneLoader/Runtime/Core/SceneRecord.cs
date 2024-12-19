@@ -83,6 +83,7 @@ namespace SceneLoader.Core
                 _stateMachineFrozen =_stateMachineMutable
                     .AddTransition<Activate>(from: _prefetched, to: _activated)
                     .AddTransition<Deactivate>(from: _activated, to: _deactivated)
+                    .AddTransition<Activate>(from: _deactivated, to: _activated)
                     .AddTransition<Unload>(from: _deactivated, to: _unloaded)
                     .AddTransition<Unload>(from: _activated, to: _unloaded)
                     .ToFrozen();
@@ -268,6 +269,7 @@ namespace SceneLoader.Core
                     .WithTransition<Prefetch>(from: unloaded, to: prefetched)
                     .WithTransition<Activate>(from: prefetched, to: activated)
                     .WithTransition<Deactivate>(from: activated, to: deactivated)
+                    .WithTransition<Activate>(from: deactivated, to: activated)
                     .WithTransition<Unload>(from: deactivated, to: unloaded)
                     .WithTransition<Unload>(from: activated, to: unloaded)
                     .WithTransition<Unload>(from: prefetched, to: unloaded)
