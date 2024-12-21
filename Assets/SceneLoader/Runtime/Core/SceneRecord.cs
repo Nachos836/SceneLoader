@@ -77,8 +77,8 @@ namespace SceneLoader.Core
                 SceneManager.sceneUnloaded -= CleanSceneRecordState;
                 SceneManager.sceneUnloaded += CleanSceneRecordState;
 
-                _activated = new Activated.Custom(_sceneInstanceReference, _prefetched.ActivatedCollection);
-                _deactivated = new Deactivated.Custom(_sceneInstanceReference, _prefetched.UnloadedCollection);
+                _activated = new Activated.Custom(_sceneInstanceReference, _prefetched.CustomLoadedCollection, _prefetched.TrivialLoadedCollection);
+                _deactivated = new Deactivated.Custom(_sceneInstanceReference, _prefetched.CustomUnloadedCollection, _prefetched.TrivialUnloadedCollection);
 
                 _stateMachineFrozen =_stateMachineMutable
                     .AddTransition<Activate>(from: _prefetched, to: _activated)
@@ -280,8 +280,13 @@ namespace SceneLoader.Core
             }
         }
 
+        // ReSharper disable ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         private void CleanUp()
         {
+            _loadedEvent.Dispose();
+            _unloadedEvent.Dispose();
+            _prefetched?.Dispose();
+
             _sceneInstanceReference.Value = null;
             _stateMachineMutable = null;
             _stateMachineFrozen = null;
@@ -289,10 +294,17 @@ namespace SceneLoader.Core
             _prefetched = default!;
             _activated = default!;
             _deactivated = default!;
-
-            _loadedEvent.Dispose();
-            _unloadedEvent.Dispose();
         }
+
+        private void OnDisable()
+        {
+            _prefetched?.Dispose();
+            _prefetched = null!;
+        }
+        // ReSharper restore ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+
+        private void OnDestroy() => OnDisable();
+
 
 #if UNITY_EDITOR
 
@@ -350,5 +362,6 @@ namespace SceneLoader.Core
         }
 
 #endif
+
     }
 }

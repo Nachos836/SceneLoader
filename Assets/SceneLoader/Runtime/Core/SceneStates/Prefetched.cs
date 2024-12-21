@@ -7,6 +7,7 @@ using Functional.Async;
 using Functional.Core.Outcome;
 using Generic.Core;
 using Generic.Core.FinalStateMachine;
+using Unity.Collections;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 
@@ -76,10 +77,15 @@ namespace SceneLoader.Core.SceneStates
             }
         }
 
-        public sealed class Custom : Prefetched, IState.IWithEnterAction
+        public sealed class Custom : Prefetched, IState.IWithEnterAction, IDisposable
         {
-            public ImmutableArray<ISceneActivated> ActivatedCollection { get; private set; } = ImmutableArray<ISceneActivated>.Empty;
-            public ImmutableArray<ISceneUnloaded> UnloadedCollection { get; private set; } = ImmutableArray<ISceneUnloaded>.Empty;
+            public ImmutableArray<ISceneLoadedDetectionCustom> CustomLoadedCollection { get; private set; } = ImmutableArray<ISceneLoadedDetectionCustom>.Empty;
+            public NativeArray<int>.ReadOnly TrivialLoadedCollection { get; private set; } = default;
+            public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; } = ImmutableArray<ISceneUnloadedDetectionCustom>.Empty;
+            public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; } = default;
+
+            private NativeArray<int>? _trivialLoadedCollection;
+            private NativeArray<int>? _trivialUnloadedCollection;
 
             public Custom(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority) : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: true)
             {
@@ -110,14 +116,27 @@ namespace SceneLoader.Core.SceneStates
                     _sceneInstanceReference.Value = instance;
 
                     var roots = instance.Scene.GetRootGameObjects();
-                    ActivatedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneActivated>(out _))
-                        .Select(static current => current.GetComponent<ISceneActivated>())
+                    CustomLoadedCollection = roots
+                        .Where(static current => current.TryGetComponent<ISceneLoadedDetectionCustom>(out _))
+                        .Select(static current => current.GetComponent<ISceneLoadedDetectionCustom>())
                         .ToImmutableArray();
-                    UnloadedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneUnloaded>(out _))
-                        .Select(static current => current.GetComponent<ISceneUnloaded>())
+                    var trivialLoadedCollection = roots
+                        .Where(static current => current.TryGetComponent<ISceneLoadedDetection>(out _))
+                        .Select(static current => current.GetComponent<ISceneLoadedDetection>().Id)
+                        .ToArray();
+                    _trivialLoadedCollection = new NativeArray<int>(trivialLoadedCollection, Allocator.Persistent);
+                    TrivialLoadedCollection = _trivialLoadedCollection.Value.AsReadOnly();
+
+                    CustomUnloadedCollection = roots
+                        .Where(static current => current.TryGetComponent<ISceneUnloadedDetectionCustom>(out _))
+                        .Select(static current => current.GetComponent<ISceneUnloadedDetectionCustom>())
                         .ToImmutableArray();
+                    var trivialUnloadedCollection = roots
+                        .Where(static current => current.TryGetComponent<ISceneUnloadedDetection>(out _))
+                        .Select(static current => current.GetComponent<ISceneUnloadedDetection>().Id)
+                        .ToArray();
+                    _trivialUnloadedCollection = new NativeArray<int>(trivialUnloadedCollection, Allocator.Persistent);
+                    TrivialUnloadedCollection = _trivialUnloadedCollection.Value.AsReadOnly();
 
                     return AsyncRichResult.Success;
                 }
@@ -125,6 +144,14 @@ namespace SceneLoader.Core.SceneStates
                 {
                     return exception;
                 }
+            }
+
+            public void Dispose()
+            {
+                _trivialLoadedCollection?.Dispose();
+                _trivialLoadedCollection = null;
+                _trivialUnloadedCollection?.Dispose();
+                _trivialUnloadedCollection = null;
             }
         }
     }

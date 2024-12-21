@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -14,7 +15,7 @@ using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace SceneLoader.Editor
 {
-    using Abstract;
+    using Abstract.Internal;
 
     [InitializeOnLoad]
     public static class SceneWorkflow
@@ -101,39 +102,67 @@ namespace SceneLoader.Editor
         private static void BeforeSceneEdited(Scene scene)
         {
             if (BuildPipeline.isBuildingPlayer) return;
-            if (scene.buildIndex == 0) return;
+            if (scene.buildIndex != -1) return; // scene should not be in a build list
 
-            var candidates = scene.GetRootGameObjects()
-                .Where(static root => root.TryGetComponent<IBeforeSceneEdited>(out _))
-                .Select(static root => root.GetComponent<IBeforeSceneEdited>());
+            var roots = scene.GetRootGameObjects();
 
-            foreach (var candidate in candidates)
+            var customRootsCount = 0;
+            var customRoots = roots
+                .Where(static root => root.TryGetComponent<IBeforeSceneEditedCustom>(out _))
+                .Select(static root => root.GetComponent<IBeforeSceneEditedCustom>());
+
+            foreach (var candidate in customRoots)
             {
                 candidate.ExecuteInEditor().Match
                 (
                     success: static () => {},
                     error: static exception => Debug.LogError(exception)
                 );
+
+                ++customRootsCount;
             }
+            if (customRootsCount == roots.Length) return;
+
+            var trivialRoots = roots
+                .Where(static root => root.TryGetComponent<IBeforeSceneEdited>(out _))
+                .Select(static root => root.GetComponent<IBeforeSceneEdited>().IdForEditor)
+                .ToImmutableArray();
+            if (trivialRoots.IsDefaultOrEmpty) return;
+
+            GameObject.SetGameObjectsActive(trivialRoots.AsSpan(), active: true);
         }
 
-        private static void AfterSceneEdited(Scene scene, string _)
+        private static void AfterSceneEdited(Scene scene, string __)
         {
             if (BuildPipeline.isBuildingPlayer) return;
-            if (scene.buildIndex == 0) return;
+            if (scene.buildIndex != -1) return; // scene should not be in a build list
 
-            var candidates = scene.GetRootGameObjects()
-                .Where(static root => root.TryGetComponent<IAfterSceneEdited>(out var _))
-                .Select(static root => root.GetComponent<IAfterSceneEdited>());
+            var roots = scene.GetRootGameObjects();
 
-            foreach (var candidate in candidates)
+            var customRootsCount = 0;
+            var customRoots = roots
+                .Where(static root => root.TryGetComponent<IAfterSceneEditedCustom>(out _))
+                .Select(static root => root.GetComponent<IAfterSceneEditedCustom>());
+
+            foreach (var candidate in customRoots)
             {
                 candidate.ExecuteInEditor().Match
                 (
                     success: static () => {},
                     error: static exception => Debug.LogError(exception)
                 );
+
+                ++customRootsCount;
             }
+            if (customRootsCount == roots.Length) return;
+
+            var trivialRoots = roots
+                .Where(static root => root.TryGetComponent<IAfterSceneEdited>(out _))
+                .Select(static root => root.GetComponent<IAfterSceneEdited>().IdForEditor)
+                .ToImmutableArray();
+            if (trivialRoots.Length == 0) return;
+
+            GameObject.SetGameObjectsActive(trivialRoots.AsSpan(), active: false);
         }
     }
 }
