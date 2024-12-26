@@ -314,7 +314,7 @@ namespace SceneLoader.Core
             _stateMachineMutable = null;
             _stateMachineFrozen = null;
             _unloadedState = default!;
-            _prefetched = default!;
+            _prefetchedState = default!;
             _activatedState = default!;
             _deactivatedState = default!;
         }
@@ -322,7 +322,7 @@ namespace SceneLoader.Core
         private void OnDisable()
         {
             _prefetchedState?.Dispose();
-            _prefetched = null!;
+            _prefetchedState = null!;
         }
         // ReSharper restore ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
 
