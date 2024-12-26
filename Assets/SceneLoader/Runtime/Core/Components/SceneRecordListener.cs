@@ -1,6 +1,5 @@
 ﻿#nullable enable
 
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -17,43 +16,37 @@ namespace SceneLoader.Core.Components
         [SerializeField] private UnityEvent _unloaded = new ();
         [SerializeField] private UnityEvent _completelyUnloaded = new ();
 
-        private CancellationTokenSource _lifetime = default!;
-        private IDisposable? _loadedSubscription;
-        private IDisposable? _unloadedSubscription;
+        private CancellationTokenSource? _lifetime;
 
         private void OnEnable()
         {
-            _lifetime = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken, CancellationToken.None);
+            _lifetime?.Dispose();
+            _lifetime ??= CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken, CancellationToken.None);
 
-            _loadedSubscription?.Dispose();
-            _loadedSubscription ??= _scene.LoadedSubscribe(_loaded.Invoke);
-            _unloadedSubscription?.Dispose();
-            _unloadedSubscription ??= _scene.UnloadedSubscribe(_unloaded.Invoke);
+            _scene._prefetched.AddListener(_prefetched.Invoke);
+            _scene._loaded.AddListener(_loaded.Invoke);
+            _scene._unloaded.AddListener(_unloaded.Invoke);
+            _scene._completelyUnloaded.AddListener(_completelyUnloaded.Invoke);
         }
 
         private void OnDisable()
         {
-            _lifetime.Cancel();
-            _lifetime.Dispose();
-            _loadedSubscription?.Dispose();
-            _loadedSubscription = null;
-            _unloadedSubscription?.Dispose();
-            _unloadedSubscription = null;
+            _lifetime?.Cancel();
+            _lifetime?.Dispose();
+            _lifetime = null;
+
+            _scene._completelyUnloaded.RemoveListener(_completelyUnloaded.Invoke);
+            _scene._unloaded.RemoveListener(_unloaded.Invoke);
+            _scene._loaded.RemoveListener(_loaded.Invoke);
+            _scene._prefetched.RemoveListener(_prefetched.Invoke);
         }
 
         public void Prefetch()
         {
             if (_scene.LastOperation.IsSuccessful)
             {
-                _scene.PrefetchAsync(_lifetime.Token)
-                    .ContinueWith(result =>
-                    {
-                        if (result.IsSuccessful)
-                        {
-                            _prefetched.Invoke();
-                        }
-
-                    }).Forget();
+                _scene.PrefetchAsync(_lifetime!.Token)
+                    .Forget();
             }
         }
 
@@ -61,7 +54,7 @@ namespace SceneLoader.Core.Components
         {
             if (_scene.LastOperation.IsSuccessful)
             {
-                _scene.LoadAsync(_lifetime.Token)
+                _scene.LoadAsync(_lifetime!.Token)
                     .Forget();
             }
         }
@@ -70,7 +63,7 @@ namespace SceneLoader.Core.Components
         {
             if (_scene.LastOperation.IsSuccessful)
             {
-                _scene.UnloadAsync(_lifetime.Token)
+                _scene.UnloadAsync(_lifetime!.Token)
                     .Forget();
             }
         }
@@ -79,15 +72,8 @@ namespace SceneLoader.Core.Components
         {
             if (_scene.LastOperation.IsSuccessful)
             {
-                _scene.CompletelyUnloadAsync(_lifetime.Token)
-                    .ContinueWith(result =>
-                    {
-                        if (result.IsSuccessful)
-                        {
-                            _completelyUnloaded.Invoke();
-                        }
-
-                    }).Forget();
+                _scene.CompletelyUnloadAsync(_lifetime!.Token)
+                    .Forget();
             }
         }
     }

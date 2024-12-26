@@ -9,9 +9,9 @@ using Generic.Core;
 using Generic.Core.FinalStateMachine;
 using JetBrains.Annotations;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 namespace SceneLoader.Core
 {
@@ -28,26 +28,37 @@ namespace SceneLoader.Core
     public sealed class SceneRecord : ScriptableObject
     {
         private readonly ValueReference<SceneInstance> _sceneInstanceReference = new ();
-        private readonly MPMCEventBus _loadedEvent = new ();
-        private readonly MPMCEventBus _unloadedEvent = new ();
 
-        [FormerlySerializedAs("customFlowNeeded")] [SerializeField, HideInInspector]
-        private bool _customFlowNeeded;
-
+        [SerializeField] [HideInInspector] private bool _customFlowNeeded;
         [field: SerializeField, Range(0, 100)] public ushort Priority { get; private set; } = 100;
         [field: SerializeField] public AssetReferenceScene Target { get; private set; } = default!;
         [field: SerializeField] public PlayerLoopTiming YieldPoint { get; private set; } = PlayerLoopTiming.Initialization;
+        [SerializeField] internal UnityEvent _prefetched = new ();
+        [SerializeField] internal UnityEvent _loaded = new ();
+        [SerializeField] internal UnityEvent _unloaded = new ();
+        [SerializeField] internal UnityEvent _completelyUnloaded = new ();
 
         private StateMachine.Frozen? _stateMachineFrozen;
         private StateMachine.Mutable? _stateMachineMutable;
 
-        private Unloaded.Custom _unloaded = default!;
-        private Prefetched.Custom _prefetched = default!;
-        private Activated.Custom _activated = default!;
-        private Deactivated.Custom _deactivated = default!;
+        private Unloaded.Custom _unloadedState = default!;
+        private Prefetched.Custom _prefetchedState = default!;
+        private Activated.Custom _activatedState = default!;
+        private Deactivated.Custom _deactivatedState = default!;
 
-        [Pure] public IDisposable LoadedSubscribe(Action whenLoaded) => _loadedEvent.Subscribe(whenLoaded);
-        [Pure] public IDisposable UnloadedSubscribe(Action whenUnloaded) => _unloadedEvent.Subscribe(whenUnloaded);
+        [Pure] public IDisposable LoadedSubscribe(UnityAction whenLoaded)
+        {
+            _loaded.AddListener(whenLoaded);
+
+            return Disposable.CreateWithState(new Subscription(whenLoaded, _loaded), static subscription => subscription.Dispose());
+        }
+
+        [Pure] public IDisposable UnloadedSubscribe(UnityAction whenUnloaded)
+        {
+            _unloaded.AddListener(whenUnloaded);
+
+            return Disposable.CreateWithState(new Subscription(whenUnloaded, _unloaded), static subscription => subscription.Dispose());
+        }
 
         public SceneCodeBindings<TSceneKey> CreateCodeBindings<TSceneKey>() where TSceneKey : class, ISceneKey
         {
@@ -67,6 +78,10 @@ namespace SceneLoader.Core
                 SceneManager.sceneUnloaded -= CleanSceneRecordState;
                 SceneManager.sceneUnloaded += CleanSceneRecordState;
 
+                if (LastOperation.IsSuccessful)
+                {
+                    _prefetched.Invoke();
+                }
                 return LastOperation;
             }
             else
@@ -77,19 +92,23 @@ namespace SceneLoader.Core
                 SceneManager.sceneUnloaded -= CleanSceneRecordState;
                 SceneManager.sceneUnloaded += CleanSceneRecordState;
 
-                _activated = new Activated.Custom(_sceneInstanceReference, _prefetched.CustomLoadedCollection, _prefetched.TrivialLoadedCollection);
-                _deactivated = new Deactivated.Custom(_sceneInstanceReference, _prefetched.CustomUnloadedCollection, _prefetched.TrivialUnloadedCollection);
+                _activatedState = new Activated.Custom(_sceneInstanceReference, _prefetchedState.CustomLoadedCollection, _prefetchedState.TrivialLoadedCollection);
+                _deactivatedState = new Deactivated.Custom(_sceneInstanceReference, _prefetchedState.CustomUnloadedCollection, _prefetchedState.TrivialUnloadedCollection);
 
                 _stateMachineFrozen =_stateMachineMutable
-                    .AddTransition<Activate>(from: _prefetched, to: _activated)
-                    .AddTransition<Deactivate>(from: _activated, to: _deactivated)
-                    .AddTransition<Activate>(from: _deactivated, to: _activated)
-                    .AddTransition<Unload>(from: _deactivated, to: _unloaded)
-                    .AddTransition<Unload>(from: _activated, to: _unloaded)
+                    .AddTransition<Activate>(from: _prefetchedState, to: _activatedState)
+                    .AddTransition<Deactivate>(from: _activatedState, to: _deactivatedState)
+                    .AddTransition<Activate>(from: _deactivatedState, to: _activatedState)
+                    .AddTransition<Unload>(from: _deactivatedState, to: _unloadedState)
+                    .AddTransition<Unload>(from: _activatedState, to: _unloadedState)
                     .ToFrozen();
 
                 _stateMachineMutable = null;
 
+                if (LastOperation.IsSuccessful)
+                {
+                    _prefetched.Invoke();
+                }
                 return LastOperation;
             }
 
@@ -110,7 +129,7 @@ namespace SceneLoader.Core
 
             if (LastOperation.IsSuccessful)
             {
-                _loadedEvent.RaiseEvent();
+                _loaded.Invoke();
             }
             return LastOperation;
         }
@@ -122,14 +141,20 @@ namespace SceneLoader.Core
 
             if (LastOperation.IsSuccessful)
             {
-                _unloadedEvent.RaiseEvent();
+                _unloaded.Invoke();
             }
             return LastOperation;
         }
 
         public async UniTask<AsyncRichResult> CompletelyUnloadAsync(CancellationToken cancellation)
         {
-            return LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Unload>(cancellation));
+            LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Unload>(cancellation));
+
+            if (LastOperation.IsSuccessful)
+            {
+                _completelyUnloaded.Invoke();
+            }
+            return LastOperation;
         }
 
         /// <summary>
@@ -248,12 +273,12 @@ namespace SceneLoader.Core
 
             if (_customFlowNeeded)
             {
-                _unloaded = new Unloaded.Custom(_sceneInstanceReference, YieldPoint);
-                _prefetched = new Prefetched.Custom(_sceneInstanceReference, Target, YieldPoint, Priority);
+                _unloadedState = new Unloaded.Custom(_sceneInstanceReference, YieldPoint);
+                _prefetchedState = new Prefetched.Custom(_sceneInstanceReference, Target, YieldPoint, Priority);
 
-                _stateMachineMutable = StateMachine.Mutable.Create<Bootstrap>(startingWith: _unloaded)
-                    .AddTransition<Prefetch>(from: _unloaded, to: _prefetched)
-                    .AddTransition<Unload>(from: _prefetched, to: _unloaded);
+                _stateMachineMutable = StateMachine.Mutable.Create<Bootstrap>(startingWith: _unloadedState)
+                    .AddTransition<Prefetch>(from: _unloadedState, to: _prefetchedState)
+                    .AddTransition<Unload>(from: _prefetchedState, to: _unloadedState);
 
                 return await _stateMachineMutable.TransitAsync<Bootstrap>(cancellation);
             }
@@ -283,28 +308,42 @@ namespace SceneLoader.Core
         // ReSharper disable ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         private void CleanUp()
         {
-            _loadedEvent.Dispose();
-            _unloadedEvent.Dispose();
-            _prefetched?.Dispose();
+            _prefetchedState?.Dispose();
 
             _sceneInstanceReference.Value = null;
             _stateMachineMutable = null;
             _stateMachineFrozen = null;
-            _unloaded = default!;
+            _unloadedState = default!;
             _prefetched = default!;
-            _activated = default!;
-            _deactivated = default!;
+            _activatedState = default!;
+            _deactivatedState = default!;
         }
 
         private void OnDisable()
         {
-            _prefetched?.Dispose();
+            _prefetchedState?.Dispose();
             _prefetched = null!;
         }
         // ReSharper restore ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
 
         private void OnDestroy() => OnDisable();
 
+        private readonly struct Subscription
+        {
+            private readonly UnityAction _action;
+            private readonly UnityEvent _event;
+
+            public Subscription(UnityAction action, UnityEvent @event)
+            {
+                _action = action;
+                _event = @event;
+            }
+
+            public void Dispose()
+            {
+                _event.RemoveListener(_action);
+            }
+        }
 
 #if UNITY_EDITOR
 

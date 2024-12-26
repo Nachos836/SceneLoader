@@ -21,3 +21,15 @@ MonoBehaviour:
     m_SubObjectType: 
     m_EditorAssetChanged: 0
   <YieldPoint>k__BackingField: 0
+  _prefetched:
+    m_PersistentCalls:
+      m_Calls: []
+  _loaded:
+    m_PersistentCalls:
+      m_Calls: []
+  _unloaded:
+    m_PersistentCalls:
+      m_Calls: []
+  _completelyUnloaded:
+    m_PersistentCalls:
+      m_Calls: []

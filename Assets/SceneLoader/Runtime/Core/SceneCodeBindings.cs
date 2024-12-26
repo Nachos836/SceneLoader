@@ -64,7 +64,7 @@ namespace SceneLoader.Core
             }
 
             UniTask<AsyncRichResult> ISceneLoader<TSceneKey>.LoadAsync(CancellationToken cancellation) => _record.LoadAsync(cancellation);
-            IDisposable ISceneLoadedEvent<TSceneKey>.Subscribe(Action whenLoaded) => _record.LoadedSubscribe(whenLoaded);
+            IDisposable ISceneLoadedEvent<TSceneKey>.Subscribe(Action whenLoaded) => _record.LoadedSubscribe(whenLoaded.Invoke);
         }
 
         private sealed class Unloader : ISceneUnloader<TSceneKey>, ISceneExplicitCompleteUnloader<TSceneKey>, ISceneUnloadedEvent<TSceneKey>
@@ -78,7 +78,7 @@ namespace SceneLoader.Core
 
             UniTask<AsyncRichResult> ISceneUnloader<TSceneKey>.UnloadAsync(CancellationToken cancellation) => _sceneRecord.UnloadAsync(cancellation);
             UniTask<AsyncRichResult> ISceneExplicitCompleteUnloader<TSceneKey>.CompletelyUnloadAsync(CancellationToken cancellation) => _sceneRecord.CompletelyUnloadAsync(cancellation);
-            IDisposable ISceneUnloadedEvent<TSceneKey>.Subscribe(Action whenUnloaded) => _sceneRecord.UnloadedSubscribe(whenUnloaded);
+            IDisposable ISceneUnloadedEvent<TSceneKey>.Subscribe(Action whenUnloaded) => _sceneRecord.UnloadedSubscribe(whenUnloaded.Invoke);
         }
     }
 }
