@@ -46,26 +46,29 @@ namespace SceneLoader.Core
         private Activated.Custom _activatedState = default!;
         private Deactivated.Custom _deactivatedState = default!;
 
-        [Pure] public IDisposable LoadedSubscribe(UnityAction whenLoaded)
+        [MustUseReturnValue]
+        public IDisposable LoadedSubscribe(UnityAction whenLoaded)
         {
             _loaded.AddListener(whenLoaded);
 
             return Disposable.CreateWithState(new Subscription(whenLoaded, _loaded), static subscription => subscription.Dispose());
         }
 
-        [Pure] public IDisposable UnloadedSubscribe(UnityAction whenUnloaded)
+        [MustUseReturnValue]
+        public IDisposable UnloadedSubscribe(UnityAction whenUnloaded)
         {
             _unloaded.AddListener(whenUnloaded);
 
             return Disposable.CreateWithState(new Subscription(whenUnloaded, _unloaded), static subscription => subscription.Dispose());
         }
 
+        [MustUseReturnValue]
         public SceneCodeBindings<TSceneKey> CreateCodeBindings<TSceneKey>() where TSceneKey : class, ISceneKey
         {
             return new SceneCodeBindings<TSceneKey>(this);
         }
 
-        public async UniTask<AsyncRichResult> PrefetchAsync(CancellationToken cancellation)
+        public async UniTask<AsyncRichResult> PrefetchAsync(CancellationToken cancellation = default)
         {
             LastOperation = await BootstrapAsync(cancellation);
             if (LastOperation.IsSuccessful is not true) return LastOperation;
@@ -123,7 +126,7 @@ namespace SceneLoader.Core
             }
         }
 
-        public async UniTask<AsyncRichResult> LoadAsync(CancellationToken cancellation)
+        public async UniTask<AsyncRichResult> LoadAsync(CancellationToken cancellation = default)
         {
             LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Activate>(cancellation));
 
@@ -135,7 +138,7 @@ namespace SceneLoader.Core
         }
 
 
-        public async UniTask<AsyncRichResult> UnloadAsync(CancellationToken cancellation)
+        public async UniTask<AsyncRichResult> UnloadAsync(CancellationToken cancellation = default)
         {
             LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Deactivate>(cancellation));
 
@@ -146,7 +149,7 @@ namespace SceneLoader.Core
             return LastOperation;
         }
 
-        public async UniTask<AsyncRichResult> CompletelyUnloadAsync(CancellationToken cancellation)
+        public async UniTask<AsyncRichResult> CompletelyUnloadAsync(CancellationToken cancellation = default)
         {
             LastOperation = LastOperation.Combine(await _stateMachineFrozen!.TransitAsync<Unload>(cancellation));
 
@@ -377,7 +380,7 @@ namespace SceneLoader.Core
                 var sceneAssetPaths = importedAssets.Concat(deletedAssets)
                     .Concat(movedAssets)
                     .Concat(movedFromAssetPaths)
-                    .Where(assetPath => assetPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase));
+                    .Where(static assetPath => assetPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase));
 
                 foreach (var assetPath in sceneAssetPaths)
                 {

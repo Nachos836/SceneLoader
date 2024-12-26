@@ -17,8 +17,8 @@ MonoBehaviour:
   <Target>k__BackingField:
     m_AssetGUID: 0b33f5564bf8aa442a06026967a59549
     m_SubObjectName: 
-    m_SubObjectGUID: 
     m_SubObjectType: 
+    m_SubObjectGUID: 
     m_EditorAssetChanged: 0
   <YieldPoint>k__BackingField: 0
   _prefetched:

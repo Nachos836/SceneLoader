@@ -340,6 +340,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: pref.ctrl_loaderWithListener_01
       objectReference: {fileID: 0}
+    - target: {fileID: 3664655717533889354, guid: a870918657145304c985bae5031c2f07, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5656121576732843024, guid: a870918657145304c985bae5031c2f07, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
