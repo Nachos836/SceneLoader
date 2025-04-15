@@ -3,6 +3,7 @@
 #nullable enable
 
 using System.Linq;
+using JetBrains.Annotations;
 using UnityEngine.AddressableAssets;
 
 namespace SceneLoader.Core
@@ -12,6 +13,13 @@ namespace SceneLoader.Core
     public sealed partial class AssetReferenceScene
     {
         private static System.Type SceneAssetType { get; } = typeof(UnityEditor.SceneAsset);
+
+        /// <summary>
+        /// Type-specific override of parent editorAsset.<br/>
+        /// Used by the editor to represent the asset referenced.
+        /// </summary>
+        [UsedImplicitly] // ReSharper disable once InconsistentNaming
+        public new UnityEditor.SceneAsset editorAsset => (UnityEditor.SceneAsset) base.editorAsset;
 
         public override partial bool ValidateAsset(string path)
         {
@@ -24,12 +32,6 @@ namespace SceneLoader.Core
             return income as UnityEditor.SceneAsset != null;
         }
 
-        /// <summary>
-        /// Type-specific override of parent editorAsset.  Used by the editor to represent the asset referenced.
-        /// </summary>
-        // ReSharper disable once InconsistentNaming
-        public new UnityEditor.SceneAsset editorAsset => (UnityEditor.SceneAsset) base.editorAsset;
-
         internal static bool CheckRequiredCustomFlow(AssetReference? income)
         {
             if (income is null) return false;
@@ -38,10 +40,8 @@ namespace SceneLoader.Core
             if (string.IsNullOrEmpty(scenePath)) return false;
 
             var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
-            var requiresCustomFlow = scene.GetRootGameObjects().Any(static root =>
-            {
-                return root.TryGetComponent<ISceneCustomProcessing>(out _);
-            });
+            var requiresCustomFlow = scene.GetRootGameObjects()
+                .Any(static root => root.TryGetComponent<ISceneCustomProcessing>(out _));
 
             if (scene.buildIndex == -1) return requiresCustomFlow;
 

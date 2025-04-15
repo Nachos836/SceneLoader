@@ -5,6 +5,8 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 
+using static System.Threading.CancellationTokenSource;
+
 namespace SceneLoader.Core.Components
 {
     [AddComponentMenu("Scene Loader/Scene's Custom Flow Components/Scene Events Behaviour Listener")]
@@ -21,7 +23,7 @@ namespace SceneLoader.Core.Components
         private void OnEnable()
         {
             _lifetime?.Dispose();
-            _lifetime ??= CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken, CancellationToken.None);
+            _lifetime ??= CreateLinkedTokenSource(destroyCancellationToken, CancellationToken.None);
 
             _scene._prefetched.AddListener(_prefetched.Invoke);
             _scene._loaded.AddListener(_loaded.Invoke);
@@ -77,40 +79,4 @@ namespace SceneLoader.Core.Components
             }
         }
     }
-
-# if UNITY_EDITOR
-
-    [UnityEditor.CustomEditor(typeof(SceneRecordListener))]
-    internal sealed class SceneRecordListenerEditor : UnityEditor.Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            base.OnInspectorGUI();
-
-            var listener = (SceneRecordListener) target;
-
-            if (GUILayout.Button("Prefetch"))
-            {
-                listener.Prefetch();
-            }
-
-            if (GUILayout.Button("Load"))
-            {
-                listener.Load();
-            }
-
-            if (GUILayout.Button("Unload"))
-            {
-                listener.Unload();
-            }
-
-            if (GUILayout.Button("Completely Unload"))
-            {
-                listener.CompletelyUnload();
-            }
-        }
-    }
-
-# endif
-
 }

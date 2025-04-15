@@ -26,7 +26,7 @@ namespace SceneLoader.Core
         private readonly ISceneExplicitCompleteUnloader<TSceneKey> _completeUnloader;
         private readonly ISceneUnloadedEvent<TSceneKey> _unloaded;
 
-        public SceneCodeBindings(SceneRecord record)
+        internal SceneCodeBindings(SceneRecord record)
         {
             _prefetcher = new LoadingPrefetcher(record);
             var sceneLoader = new Loader(record);

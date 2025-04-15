@@ -46,20 +46,20 @@ namespace SceneLoader.Core
         private Activated.Custom _activatedState = default!;
         private Deactivated.Custom _deactivatedState = default!;
 
-        [MustUseReturnValue]
-        public IDisposable LoadedSubscribe(UnityAction whenLoaded)
+        [MustUseReturnValue] [MustDisposeResource]
+        public Subscription LoadedSubscribe(UnityAction whenLoaded)
         {
             _loaded.AddListener(whenLoaded);
 
-            return Disposable.CreateWithState(new Subscription(whenLoaded, _loaded), static subscription => subscription.Dispose());
+            return new Subscription(whenLoaded, _loaded);
         }
 
-        [MustUseReturnValue]
-        public IDisposable UnloadedSubscribe(UnityAction whenUnloaded)
+        [MustUseReturnValue] [MustDisposeResource]
+        public Subscription UnloadedSubscribe(UnityAction whenUnloaded)
         {
             _unloaded.AddListener(whenUnloaded);
 
-            return Disposable.CreateWithState(new Subscription(whenUnloaded, _unloaded), static subscription => subscription.Dispose());
+            return new Subscription(whenUnloaded, _unloaded);
         }
 
         [MustUseReturnValue]
@@ -198,6 +198,8 @@ namespace SceneLoader.Core
             PerformRoutineAsync(ApplicationLifetime)
                 .Forget();
 
+            return;
+
             async UniTask PerformRoutineAsync(CancellationToken token = default)
             {
                 var result = await LoadAsync(token);
@@ -223,6 +225,8 @@ namespace SceneLoader.Core
             PerformRoutineAsync(ApplicationLifetime)
                 .Forget();
 
+            return;
+
             async UniTask PerformRoutineAsync(CancellationToken token = default)
             {
                 var result = await UnloadAsync(token);
@@ -247,6 +251,8 @@ namespace SceneLoader.Core
         {
             PerformRoutineAsync(ApplicationLifetime)
                 .Forget();
+
+            return;
 
             async UniTask PerformRoutineAsync(CancellationToken token = default)
             {
@@ -331,12 +337,12 @@ namespace SceneLoader.Core
 
         private void OnDestroy() => OnDisable();
 
-        private readonly struct Subscription
+        public readonly struct Subscription : IDisposable
         {
             private readonly UnityAction _action;
             private readonly UnityEvent _event;
 
-            public Subscription(UnityAction action, UnityEvent @event)
+            internal Subscription(UnityAction action, UnityEvent @event)
             {
                 _action = action;
                 _event = @event;

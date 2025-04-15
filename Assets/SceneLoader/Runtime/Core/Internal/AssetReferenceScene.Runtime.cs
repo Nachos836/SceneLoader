@@ -6,15 +6,8 @@ namespace SceneLoader.Core
 {
     public sealed partial class AssetReferenceScene
     {
-        public override partial bool ValidateAsset(string path)
-        {
-            return base.ValidateAsset(path);
-        }
-
-        public override partial bool ValidateAsset(UnityEngine.Object income)
-        {
-            return base.ValidateAsset(income);
-        }
+        public override partial bool ValidateAsset(string path) => base.ValidateAsset(path);
+        public override partial bool ValidateAsset(UnityEngine.Object income) => base.ValidateAsset(income);
     }
 }
 

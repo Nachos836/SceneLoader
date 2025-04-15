@@ -1,5 +1,6 @@
 ﻿#nullable enable
 
+using System.Diagnostics;
 using UnityEngine;
 
 namespace SceneLoader.Core.Components
@@ -15,6 +16,6 @@ namespace SceneLoader.Core.Components
 
         int ISceneLoadedDetection.Id => _cachedGameObject.GetInstanceID();
 
-        private void Reset() => _cachedGameObject = gameObject;
+        [Conditional("UNITY_EDITOR")] private void Reset() => _cachedGameObject = gameObject;
     }
 }
