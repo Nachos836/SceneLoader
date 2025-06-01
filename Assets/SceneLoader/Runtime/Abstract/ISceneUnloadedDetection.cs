@@ -3,8 +3,8 @@
 namespace SceneLoader.Abstract
 {
     /// <summary>
-    /// Simply Disable GameObject <br/>
-    /// when Scene will be Unloaded
+    /// Disable GameObject <br/>
+    /// when Scene is Unloaded
     /// </summary>
     public partial interface ISceneUnloadedDetection
     {
@@ -13,7 +13,7 @@ namespace SceneLoader.Abstract
 
     /// <summary>
     /// Execute Custom Callback on GameObject <br/>
-    /// when Scene will be Unloaded
+    /// when Scene is Unloaded
     /// </summary>
     public partial interface ISceneUnloadedDetectionCustom
     {

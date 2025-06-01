@@ -3,8 +3,8 @@
 namespace SceneLoader.Abstract
 {
     /// <summary>
-    /// Simply Enable GameObject <br/>
-    /// when Scene will be Loaded
+    /// Enable GameObject <br/>
+    /// when Scene is Loaded
     /// </summary>
     public partial interface ISceneLoadedDetection
     {
@@ -13,7 +13,7 @@ namespace SceneLoader.Abstract
 
     /// <summary>
     /// Execute Custom Callback on GameObject <br/>
-    /// when Scene will be Loaded
+    /// when Scene is Loaded
     /// </summary>
     public partial interface ISceneLoadedDetectionCustom
     {

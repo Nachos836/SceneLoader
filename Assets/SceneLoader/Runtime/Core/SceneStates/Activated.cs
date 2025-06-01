@@ -23,7 +23,7 @@ namespace SceneLoader.Core.SceneStates
             _instance = instance;
         }
 
-        public sealed class Regular : Activated, IState.IWithEnterAction
+        public sealed class Regular : Activated, IState.WithEnterAction
         {
             private readonly PlayerLoopTiming _yieldPoint;
 
@@ -32,15 +32,15 @@ namespace SceneLoader.Core.SceneStates
                 _yieldPoint = yieldPoint;
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_instance.TryGetValue(out var scene) is false) return new Expected.Failure("Scene is not prefetched");
-                if (scene.Scene.isLoaded) return new Expected.Failure("Scene is already activated");
+                if (scene.Value.Scene.isLoaded) return new Expected.Failure("Scene is already activated");
 
                 try
                 {
-                    var doesCanceled = await scene.ActivateAsync()
+                    var doesCanceled = await scene.Value.ActivateAsync()
                         .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true)
                         .SuppressCancellationThrow();
 
@@ -55,7 +55,7 @@ namespace SceneLoader.Core.SceneStates
             }
         }
 
-        public sealed class Custom : Activated, IState.IWithEnterAction
+        public sealed class Custom : Activated, IState.WithEnterAction
         {
             private readonly ImmutableArray<ISceneLoadedDetectionCustom> _customActivatedCollection;
             private readonly NativeArray<int>.ReadOnly _trivialActivatedCollection;
@@ -71,11 +71,11 @@ namespace SceneLoader.Core.SceneStates
                 _trivialActivatedCollection = trivialActivatedCollection;
             }
 
-            UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);
                 if (_instance.TryGetValue(out var scene) is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene is not prefetched"));
-                if (scene.Scene.isLoaded is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene should be activated in regular way in order to activate custom flow"));
+                if (scene.Value.Scene.isLoaded is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene should be activated in regular way in order to activate custom flow"));
 
                 if (_customActivatedCollection.IsDefaultOrEmpty) goto TrivialFlow;
                 foreach (ref readonly var candidate in _customActivatedCollection.AsSpan())

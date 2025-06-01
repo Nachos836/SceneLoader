@@ -117,7 +117,7 @@ namespace SceneLoader.Core
 
             void CleanSceneRecordState(Scene toUnload)
             {
-                if (_sceneInstanceReference.TryGetValue(out var loaded) && loaded.Scene == toUnload)
+                if (_sceneInstanceReference.TryGetValue(out var loaded) && loaded.Value.Scene == toUnload)
                 {
                     _sceneInstanceReference.Value = null;
                 }
@@ -177,7 +177,7 @@ namespace SceneLoader.Core
             {
                 var result = await PrefetchAsync(token);
                 var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
-                    ? instance.Scene.name
+                    ? instance.Value.Scene.name
                     : "undetermined";
 
                 var exception = result.Match<Exception?>
@@ -204,7 +204,7 @@ namespace SceneLoader.Core
             {
                 var result = await LoadAsync(token);
                 var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
-                    ? instance.Scene.name
+                    ? instance.Value.Scene.name
                     : "undetermined";
 
                 var exception = result.Match<Exception?>
@@ -231,7 +231,7 @@ namespace SceneLoader.Core
             {
                 var result = await UnloadAsync(token);
                 var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
-                    ? instance.Scene.name
+                    ? instance.Value.Scene.name
                     : "undetermined";
 
                 var exception = result.Match<Exception?>
@@ -258,7 +258,7 @@ namespace SceneLoader.Core
             {
                 var result = await CompletelyUnloadAsync(token);
                 var sceneName = _sceneInstanceReference.TryGetValue(out var instance)
-                    ? instance.Scene.name
+                    ? instance.Value.Scene.name
                     : "undetermined";
 
                 var exception = result.Match<Exception?>

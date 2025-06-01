@@ -6,6 +6,8 @@ using Generic.Core;
 using Generic.Core.FinalStateMachine;
 using UnityEngine.ResourceManagement.ResourceProviders;
 
+using Addressable = UnityEngine.AddressableAssets.Addressables;
+
 namespace SceneLoader.Core.SceneStates
 {
     internal abstract class Unloaded : IState
@@ -17,7 +19,7 @@ namespace SceneLoader.Core.SceneStates
             _instance = instance;
         }
 
-        public sealed class Regular : Unloaded, IState.IWithEnterAction
+        public sealed class Regular : Unloaded, IState.WithEnterAction
         {
             private readonly PlayerLoopTiming _yieldPoint;
 
@@ -26,15 +28,15 @@ namespace SceneLoader.Core.SceneStates
                 _yieldPoint = yieldPoint;
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_instance.TryGetValue(out var scene) is false) return AsyncRichResult.Success;
-                if (scene.Scene.isLoaded is false) return AsyncRichResult.Success;
+                if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
 
                 try
                 {
-                    var (isCanceled, instance) = await UnityEngine.AddressableAssets.Addressables.UnloadSceneAsync(scene, autoReleaseHandle: true)
+                    var (isCanceled, instance) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
                         .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
                         .SuppressCancellationThrow();
 
@@ -51,7 +53,7 @@ namespace SceneLoader.Core.SceneStates
             }
         }
 
-        public sealed class Custom : Unloaded, IState.IWithEnterAction
+        public sealed class Custom : Unloaded, IState.WithEnterAction
         {
             private readonly PlayerLoopTiming _yieldPoint;
 
@@ -60,15 +62,15 @@ namespace SceneLoader.Core.SceneStates
                 _yieldPoint = yieldPoint;
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_instance.TryGetValue(out var scene) is false) return AsyncRichResult.Success;
-                if (scene.Scene.isLoaded is false) return AsyncRichResult.Success;
+                if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
 
                 try
                 {
-                    var (isCanceled, _) = await UnityEngine.AddressableAssets.Addressables.UnloadSceneAsync(scene, autoReleaseHandle: true)
+                    var (isCanceled, _) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
                         .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
                         .SuppressCancellationThrow();
 

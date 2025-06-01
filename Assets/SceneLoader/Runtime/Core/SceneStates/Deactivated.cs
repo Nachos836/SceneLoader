@@ -10,6 +10,8 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.ResourceManagement.ResourceProviders;
 
+using Addressable = UnityEngine.AddressableAssets.Addressables;
+
 namespace SceneLoader.Core.SceneStates
 {
     using Abstract;
@@ -23,7 +25,7 @@ namespace SceneLoader.Core.SceneStates
             _instance = instance;
         }
 
-        public sealed class Regular : Deactivated, IState.IWithEnterAction
+        public sealed class Regular : Deactivated, IState.WithEnterAction
         {
             private readonly PlayerLoopTiming _yieldPoint;
 
@@ -32,15 +34,15 @@ namespace SceneLoader.Core.SceneStates
                 _yieldPoint = yieldPoint;
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_instance.TryGetValue(out var scene) is false) return new Expected.Failure("Scene is not activated/loaded");
-                if (scene.Scene.isLoaded is false) return AsyncRichResult.Success;
+                if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
 
                 try
                 {
-                    var (isCanceled, instance) = await UnityEngine.AddressableAssets.Addressables.UnloadSceneAsync(scene, autoReleaseHandle: true)
+                    var (isCanceled, instance) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
                         .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
                         .SuppressCancellationThrow();
 
@@ -57,7 +59,7 @@ namespace SceneLoader.Core.SceneStates
             }
         }
 
-        public sealed class Custom : Deactivated, IState.IWithEnterAction
+        public sealed class Custom : Deactivated, IState.WithEnterAction
         {
             private readonly ImmutableArray<ISceneUnloadedDetectionCustom> _customUnloadedCollection;
             private readonly NativeArray<int>.ReadOnly _trivialUnloadedCollection;
@@ -73,11 +75,11 @@ namespace SceneLoader.Core.SceneStates
                 _trivialUnloadedCollection = trivialUnloadedCollection;
             }
 
-            UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);
                 if (_instance.TryGetValue(out var scene) is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene is activated/loaded"));
-                if (scene.Scene.isLoaded is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene should be activated in regular way in order to activate custom flow"));
+                if (scene.Value.Scene.isLoaded is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene should be activated in regular way in order to activate custom flow"));
 
                 if (_customUnloadedCollection.IsDefaultOrEmpty) goto TrivialFlow;
                 foreach (ref readonly var candidate in _customUnloadedCollection.AsSpan())

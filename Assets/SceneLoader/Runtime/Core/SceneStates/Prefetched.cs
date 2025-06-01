@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
@@ -14,6 +14,7 @@ using UnityEngine.SceneManagement;
 namespace SceneLoader.Core.SceneStates
 {
     using Abstract;
+    using Runtime.Core.Internal.Bridge;
 
     internal abstract class Prefetched : IState
     {
@@ -38,13 +39,14 @@ namespace SceneLoader.Core.SceneStates
             _customFlowNeeded = customFlowNeeded;
         }
 
-        public sealed class Regular : Prefetched, IState.IWithEnterAction
+        public sealed class Regular : Prefetched, IState.WithEnterAction
         {
-            public Regular(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority) : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: false)
+            public Regular(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority)
+                : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: false)
             {
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_sceneInstanceReference.TryGetValue(out _)) return new Expected.Failure("Scene is already loaded");
@@ -77,21 +79,22 @@ namespace SceneLoader.Core.SceneStates
             }
         }
 
-        public sealed class Custom : Prefetched, IState.IWithEnterAction, IDisposable
+        public sealed class Custom : Prefetched, IState.WithEnterAction, IDisposable
         {
             public ImmutableArray<ISceneLoadedDetectionCustom> CustomLoadedCollection { get; private set; } = ImmutableArray<ISceneLoadedDetectionCustom>.Empty;
-            public NativeArray<int>.ReadOnly TrivialLoadedCollection { get; private set; } = default;
+            public NativeArray<int>.ReadOnly TrivialLoadedCollection { get; private set; }
             public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; } = ImmutableArray<ISceneUnloadedDetectionCustom>.Empty;
-            public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; } = default;
+            public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; }
 
             private NativeArray<int>? _trivialLoadedCollection;
             private NativeArray<int>? _trivialUnloadedCollection;
 
-            public Custom(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority) : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: true)
+            public Custom(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority)
+                : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: true)
             {
             }
 
-            async UniTask<AsyncRichResult> IState.IWithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
             {
                 if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
                 if (_sceneInstanceReference.TryGetValue(out _)) return new Expected.Failure("Scene is already loaded");
@@ -115,28 +118,59 @@ namespace SceneLoader.Core.SceneStates
 
                     _sceneInstanceReference.Value = instance;
 
-                    var roots = instance.Scene.GetRootGameObjects();
-                    CustomLoadedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneLoadedDetectionCustom>(out _))
-                        .Select(static current => current.GetComponent<ISceneLoadedDetectionCustom>())
-                        .ToImmutableArray();
-                    var trivialLoadedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneLoadedDetection>(out _))
-                        .Select(static current => current.GetComponent<ISceneLoadedDetection>().Id)
-                        .ToArray();
-                    _trivialLoadedCollection = new NativeArray<int>(trivialLoadedCollection, Allocator.Persistent);
-                    TrivialLoadedCollection = _trivialLoadedCollection.Value.AsReadOnly();
+                    var roots = ImmutableCollectionsMarshal.AsImmutableArray(instance.Scene.GetRootGameObjects());
+                    var trivialLoadedCollectionCount = 0;
+                    var trivialUnloadedCollectionCount = 0;
 
-                    CustomUnloadedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneUnloadedDetectionCustom>(out _))
-                        .Select(static current => current.GetComponent<ISceneUnloadedDetectionCustom>())
-                        .ToImmutableArray();
-                    var trivialUnloadedCollection = roots
-                        .Where(static current => current.TryGetComponent<ISceneUnloadedDetection>(out _))
-                        .Select(static current => current.GetComponent<ISceneUnloadedDetection>().Id)
-                        .ToArray();
-                    _trivialUnloadedCollection = new NativeArray<int>(trivialUnloadedCollection, Allocator.Persistent);
-                    TrivialUnloadedCollection = _trivialUnloadedCollection.Value.AsReadOnly();
+                    var customLoadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneLoadedDetectionCustom>(roots.Length);
+                    var trivialLoadedCollectionBuilder = new NativeArray<int>(roots.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    var customUnloadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneUnloadedDetectionCustom>(roots.Length);
+                    var trivialUnloadedCollectionBuilder = new NativeArray<int>(roots.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+
+                    foreach (var root in roots)
+                    {
+                        if (root.TryGetComponent(out ISceneLoadedDetectionCustom loadedCustom))
+                        {
+                            customLoadedCollectionBuilder.Add(loadedCustom);
+                        }
+                        else if (root.TryGetComponent(out ISceneLoadedDetection loadedTrivial))
+                        {
+                            trivialLoadedCollectionBuilder[trivialLoadedCollectionCount] = loadedTrivial.Id;
+                            ++trivialLoadedCollectionCount;
+                        }
+
+                        if (root.TryGetComponent(out ISceneUnloadedDetectionCustom unloadedCustom))
+                        {
+                            customUnloadedCollectionBuilder.Add(unloadedCustom);
+                        }
+                        else if (root.TryGetComponent(out ISceneUnloadedDetection unloadedTrivial))
+                        {
+                            trivialUnloadedCollectionBuilder[trivialUnloadedCollectionCount] = unloadedTrivial.Id;
+                            ++trivialUnloadedCollectionCount;
+                        }
+                    }
+
+                    CustomLoadedCollection = customLoadedCollectionBuilder.DrainToImmutable();
+                    if (trivialLoadedCollectionCount != 0)
+                    {
+                        _trivialLoadedCollection = trivialLoadedCollectionBuilder;
+                        TrivialLoadedCollection = trivialLoadedCollectionBuilder.AsReadOnly(trivialLoadedCollectionCount);
+                    }
+                    else
+                    {
+                        trivialLoadedCollectionBuilder.Dispose();
+                    }
+
+                    CustomUnloadedCollection = customUnloadedCollectionBuilder.DrainToImmutable();
+                    if (trivialUnloadedCollectionCount != 0)
+                    {
+                        _trivialUnloadedCollection = trivialUnloadedCollectionBuilder;
+                        TrivialUnloadedCollection = trivialUnloadedCollectionBuilder.AsReadOnly(trivialUnloadedCollectionCount);
+                    }
+                    else
+                    {
+                        trivialUnloadedCollectionBuilder.Dispose();
+                    }
 
                     return AsyncRichResult.Success;
                 }

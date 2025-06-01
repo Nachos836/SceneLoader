@@ -37,6 +37,7 @@ MonoBehaviour:
     - com.redwyre.custom-toolbar
     - com.yasirkula.ingamedebugconsole
     - jp.hadashikick.vcontainer
+    - org.nuget.microsoft.bcl.memory
     - org.nuget.system.buffers
     - org.nuget.system.collections.immutable
     - org.nuget.system.memory
@@ -50,6 +51,6 @@ MonoBehaviour:
   m_RegistryInfoDraft:
     m_Modified: 0
     m_ErrorMessage: 
-    m_UserModificationsInstanceId: -864
-    m_OriginalInstanceId: -868
+    m_UserModificationsInstanceId: -874
+    m_OriginalInstanceId: -878
   m_LoadAssets: 0
