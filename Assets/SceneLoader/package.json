@@ -1,7 +1,7 @@
 {
 	"name": "com.nachos836.scene-loader",
 	"displayName": "Unity Scene Loader",
-	"version": "0.8.0",
+	"version": "0.9.0",
 	"unity": "2022.3",
 	"description": "Declarative Unity Scene Loader implementation with IOC in mind",
 	"keywords": ["Scene", "Loading", "Scene Loader"],
@@ -20,12 +20,12 @@
 		"revision": "master"
 	},
 	"dependencies": {
-		"com.unity.addressables": "2.5.0",
+		"com.unity.addressables": "2.7.4",
 		"com.unity.collections": "2.5.7",
 		"com.cysharp.unitask": "2.5.10",
-		"org.nuget.system.collections.immutable": "9.0.5",
+		"org.nuget.system.collections.immutable": "9.0.9",
 		"com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional#0.5.2",
-		"com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.6.0"
+		"com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.8.0"
 	},
 	"scopedRegistries": [
 		{

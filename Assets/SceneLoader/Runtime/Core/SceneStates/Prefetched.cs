@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 namespace SceneLoader.Core.SceneStates
 {
     using Abstract;
-    using Runtime.Core.Internal.Bridge;
+    using Runtime.Core.Internal;
 
     internal abstract class Prefetched : IState
     {
