@@ -7,21 +7,31 @@
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
+    "com.nachos836.dot-net-compat": {
+      "version": "https://github.com/Nachos836/Generic.git?path=Assets/dotNetCompat",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "org.nuget.system.runtime.compilerservices.unsafe": "6.1.2"
+      },
+      "hash": "7fbdc745e8782156d45a198d90c573ee364f55d0"
+    },
     "com.nachos836.editor-utils": {
       "version": "https://github.com/Nachos836/Generic.git?path=Assets/EditorUtils",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "44e82c566359488a936aace6d5c0e09c77f6ebf7"
+      "hash": "7fbdc745e8782156d45a198d90c573ee364f55d0"
     },
     "com.nachos836.functional": {
       "version": "https://github.com/Nachos836/Functional.git?path=Assets/Functional",
       "depth": 0,
       "source": "git",
       "dependencies": {
-        "com.cysharp.unitask": "2.5.10"
+        "com.cysharp.unitask": "2.5.10",
+        "com.nachos836.dot-net-compat": "https://github.com/Nachos836/Generic.git?path=Assets/dotNetCompat"
       },
-      "hash": "bb8661ea37284242e3bbcd2968da53cb48de5e6c"
+      "hash": "afb05eac48470e623b8373d61657cfadd8e1abe9"
     },
     "com.nachos836.generic": {
       "version": "https://github.com/Nachos836/Generic.git?path=Assets/Generic",
@@ -29,10 +39,17 @@
       "source": "git",
       "dependencies": {
         "com.cysharp.unitask": "2.5.10",
-        "org.nuget.system.collections.immutable": "9.0.8",
+        "org.nuget.system.collections.immutable": "9.0.10",
         "com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional#0.4.0"
       },
-      "hash": "44e82c566359488a936aace6d5c0e09c77f6ebf7"
+      "hash": "7fbdc745e8782156d45a198d90c573ee364f55d0"
+    },
+    "com.pelerin.editor-dark-mode-extended": {
+      "version": "https://gitlab.com/pelerin-pub/unity3d/package/editor-dark-mode-extended.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "c28482179bcbce17775b8f1d4dff9de7585394dc"
     },
     "com.unity.addressables": {
       "version": "2.7.4",
@@ -96,11 +113,11 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.23",
+      "version": "2.0.25",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.test-framework": "1.1.9"
+        "com.unity.test-framework": "1.1.31"
       },
       "url": "https://packages.unity.com"
     },
@@ -199,7 +216,7 @@
       "url": "https://package.openupm.com"
     },
     "org.nuget.system.collections.immutable": {
-      "version": "9.0.9",
+      "version": "9.0.10",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -227,7 +244,7 @@
       "url": "https://package.openupm.com"
     },
     "org.nuget.system.runtime.compilerservices.unsafe": {
-      "version": "6.0.0",
+      "version": "6.1.2",
       "depth": 1,
       "source": "registry",
       "dependencies": {},

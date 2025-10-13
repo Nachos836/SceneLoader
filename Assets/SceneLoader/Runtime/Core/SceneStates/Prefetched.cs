@@ -81,9 +81,9 @@ namespace SceneLoader.Core.SceneStates
 
         public sealed class Custom : Prefetched, IState.WithEnterAction, IDisposable
         {
-            public ImmutableArray<ISceneLoadedDetectionCustom> CustomLoadedCollection { get; private set; } = ImmutableArray<ISceneLoadedDetectionCustom>.Empty;
+            public ImmutableArray<ISceneLoadedDetectionCustom> CustomLoadedCollection { get; private set; }
             public NativeArray<int>.ReadOnly TrivialLoadedCollection { get; private set; }
-            public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; } = ImmutableArray<ISceneUnloadedDetectionCustom>.Empty;
+            public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; }
             public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; }
 
             private NativeArray<int>? _trivialLoadedCollection;

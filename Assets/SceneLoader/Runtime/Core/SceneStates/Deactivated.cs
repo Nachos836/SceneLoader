@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
 using Functional.Core.Outcome;
 using Generic.Core;
 using Generic.Core.FinalStateMachine;
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.ResourceManagement.ResourceProviders;
 
@@ -14,8 +12,6 @@ using Addressable = UnityEngine.AddressableAssets.Addressables;
 
 namespace SceneLoader.Core.SceneStates
 {
-    using Abstract;
-
     internal abstract class Deactivated : IState
     {
         private readonly ValueReference<SceneInstance> _instance;
@@ -61,18 +57,11 @@ namespace SceneLoader.Core.SceneStates
 
         public sealed class Custom : Deactivated, IState.WithEnterAction
         {
-            private readonly ImmutableArray<ISceneUnloadedDetectionCustom> _customUnloadedCollection;
-            private readonly NativeArray<int>.ReadOnly _trivialUnloadedCollection;
+            private readonly Prefetched.Custom _prefetchedState;
 
-            public Custom
-            (
-                ValueReference<SceneInstance> instance, ImmutableArray<ISceneUnloadedDetectionCustom> customUnloadedCollection,
-                NativeArray<int>.ReadOnly trivialUnloadedCollection
-            )
-                : base(instance)
+            public Custom(ValueReference<SceneInstance> instance, Prefetched.Custom prefetchedState) : base(instance)
             {
-                _customUnloadedCollection = customUnloadedCollection;
-                _trivialUnloadedCollection = trivialUnloadedCollection;
+                _prefetchedState = prefetchedState;
             }
 
             UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
@@ -81,8 +70,10 @@ namespace SceneLoader.Core.SceneStates
                 if (_instance.TryGetValue(out var scene) is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene is activated/loaded"));
                 if (scene.Value.Scene.isLoaded is false) return UniTask.FromResult<AsyncRichResult>(new Expected.Failure("Scene should be activated in regular way in order to activate custom flow"));
 
-                if (_customUnloadedCollection.IsDefaultOrEmpty) goto TrivialFlow;
-                foreach (ref readonly var candidate in _customUnloadedCollection.AsSpan())
+                var customUnloadedCollection = _prefetchedState.CustomUnloadedCollection;
+                var trivialUnloadedCollection = _prefetchedState.TrivialUnloadedCollection;
+                if (customUnloadedCollection.IsDefaultOrEmpty) goto TrivialFlow;
+                foreach (ref readonly var candidate in customUnloadedCollection.AsSpan())
                 {
                     if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);
 
@@ -95,9 +86,9 @@ namespace SceneLoader.Core.SceneStates
                     ));
                 }
 
-                TrivialFlow: if (_trivialUnloadedCollection.Length > 0)
+                TrivialFlow: if (trivialUnloadedCollection.Length > 0)
                 {
-                    GameObject.SetGameObjectsActive(_trivialUnloadedCollection, active: false);
+                    GameObject.SetGameObjectsActive(trivialUnloadedCollection, active: false);
                 }
 
                 return UniTask.FromResult(AsyncRichResult.Success);

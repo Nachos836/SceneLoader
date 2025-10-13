@@ -1,19 +1,21 @@
 {
   "dependencies": {
     "com.cysharp.unitask": "2.5.10",
+    "com.nachos836.dot-net-compat": "https://github.com/Nachos836/Generic.git?path=Assets/dotNetCompat",
     "com.nachos836.editor-utils": "https://github.com/Nachos836/Generic.git?path=Assets/EditorUtils",
     "com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional",
     "com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic",
+    "com.pelerin.editor-dark-mode-extended": "https://gitlab.com/pelerin-pub/unity3d/package/editor-dark-mode-extended.git",
     "com.unity.addressables": "2.7.4",
     "com.unity.collections": "2.5.7",
     "com.unity.ide.rider": "3.0.38",
-    "com.unity.ide.visualstudio": "2.0.23",
+    "com.unity.ide.visualstudio": "2.0.25",
     "com.unity.memoryprofiler": "1.1.9",
     "com.unity.test-framework": "1.6.0",
     "com.unity.ugui": "2.0.0",
     "com.yasirkula.ingamedebugconsole": "1.8.2",
     "jp.hadashikick.vcontainer": "1.17.0",
-    "org.nuget.system.collections.immutable": "9.0.9"
+    "org.nuget.system.collections.immutable": "9.0.10"
   },
   "scopedRegistries": [
     {

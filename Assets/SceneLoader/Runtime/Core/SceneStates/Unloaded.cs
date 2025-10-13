@@ -10,80 +10,38 @@ using Addressable = UnityEngine.AddressableAssets.Addressables;
 
 namespace SceneLoader.Core.SceneStates
 {
-    internal abstract class Unloaded : IState
+    internal sealed class Unloaded : IState, IState.WithEnterAction
     {
         private readonly ValueReference<SceneInstance> _instance;
+        private readonly PlayerLoopTiming _yieldPoint;
 
-        private Unloaded(ValueReference<SceneInstance> instance)
+        public Unloaded(ValueReference<SceneInstance> instance, PlayerLoopTiming yieldPoint)
         {
             _instance = instance;
+            _yieldPoint = yieldPoint;
         }
 
-        public sealed class Regular : Unloaded, IState.WithEnterAction
+        async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
         {
-            private readonly PlayerLoopTiming _yieldPoint;
+            if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
+            if (_instance.TryGetValue(out var scene) is false) return AsyncRichResult.Success;
+            if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
 
-            public Regular(ValueReference<SceneInstance> instance, PlayerLoopTiming yieldPoint) : base(instance)
+            try
             {
-                _yieldPoint = yieldPoint;
+                var (isCanceled, instance) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
+                    .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
+                    .SuppressCancellationThrow();
+
+                if (isCanceled) return AsyncRichResult.Cancel;
+
+                _instance.Value = instance;
+
+                return AsyncRichResult.Success;
             }
-
-            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
+            catch (Exception exception)
             {
-                if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
-                if (_instance.TryGetValue(out var scene) is false) return AsyncRichResult.Success;
-                if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
-
-                try
-                {
-                    var (isCanceled, instance) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
-                        .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
-                        .SuppressCancellationThrow();
-
-                    if (isCanceled) return AsyncRichResult.Cancel;
-
-                    _instance.Value = instance;
-
-                    return AsyncRichResult.Success;
-                }
-                catch (Exception exception)
-                {
-                    return exception;
-                }
-            }
-        }
-
-        public sealed class Custom : Unloaded, IState.WithEnterAction
-        {
-            private readonly PlayerLoopTiming _yieldPoint;
-
-            public Custom(ValueReference<SceneInstance> instance, PlayerLoopTiming yieldPoint) : base(instance)
-            {
-                _yieldPoint = yieldPoint;
-            }
-
-            async UniTask<AsyncRichResult> IState.WithEnterAction.OnEnterAsync(CancellationToken cancellation)
-            {
-                if (cancellation.IsCancellationRequested) return AsyncRichResult.Cancel;
-                if (_instance.TryGetValue(out var scene) is false) return AsyncRichResult.Success;
-                if (scene.Value.Scene.isLoaded is false) return AsyncRichResult.Success;
-
-                try
-                {
-                    var (isCanceled, _) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
-                        .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
-                        .SuppressCancellationThrow();
-
-                    if (isCanceled) return AsyncRichResult.Cancel;
-
-                    _instance.Value = null;
-
-                    return AsyncRichResult.Success;
-                }
-                catch (Exception exception)
-                {
-                    return exception;
-                }
+                return exception;
             }
         }
     }

@@ -13,23 +13,11 @@ MonoBehaviour:
   m_Name: so_scene.first_01
   m_EditorClassIdentifier: 
   _customFlowNeeded: 0
-  <Priority>k__BackingField: 100
-  <Target>k__BackingField:
+  _priority: 100
+  _target:
     m_AssetGUID: 2494a01638c337c40b6e0af81d54bbb9
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
-  <YieldPoint>k__BackingField: 0
-  _prefetched:
-    m_PersistentCalls:
-      m_Calls: []
-  _loaded:
-    m_PersistentCalls:
-      m_Calls: []
-  _unloaded:
-    m_PersistentCalls:
-      m_Calls: []
-  _completelyUnloaded:
-    m_PersistentCalls:
-      m_Calls: []
+  _yieldPoint: 0

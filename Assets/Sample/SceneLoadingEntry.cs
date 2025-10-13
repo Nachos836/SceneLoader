@@ -7,45 +7,28 @@ using UnityEngine;
 using VContainer.Unity;
 
 using SceneLoader.Abstract;
-using SceneLoader.Abstract.Explicit;
 
 namespace SceneLoader.Sample
 {
-    internal sealed class SceneLoadingEntry : IInitializable, IAsyncStartable
+    internal sealed class SceneLoadingEntry : IAsyncStartable
     {
-        private readonly ISceneExplicitPrefetcher<FirstScene> _firstScenePrefetcher;
-        private readonly ISceneExplicitPrefetcher<SecondScene> _secondScenePrefetcher;
         private readonly ISceneLoader<FirstScene> _firstSceneLoader;
         private readonly ISceneLoader<SecondScene> _secondSceneLoader;
         private readonly ISceneUnloader<FirstScene> _firstSceneUnloader;
         private readonly ISceneUnloader<SecondScene> _secondSceneUnloader;
-        private readonly ISceneExplicitCompleteUnloader<SecondScene> _secondSceneCompleteUnloader;
 
         public SceneLoadingEntry
         (
-            ISceneExplicitPrefetcher<FirstScene> firstScenePrefetcher,
-            ISceneExplicitPrefetcher<SecondScene> secondScenePrefetcher,
             ISceneLoader<FirstScene> firstSceneLoader,
             ISceneLoader<SecondScene> secondSceneLoader,
             ISceneUnloader<FirstScene> firstSceneUnloader,
-            ISceneUnloader<SecondScene> secondSceneUnloader,
-            ISceneExplicitCompleteUnloader<SecondScene> secondSceneCompleteUnloader
+            ISceneUnloader<SecondScene> secondSceneUnloader
         ) {
-            _firstScenePrefetcher = firstScenePrefetcher;
-            _secondScenePrefetcher = secondScenePrefetcher;
+
             _firstSceneLoader = firstSceneLoader;
             _secondSceneLoader = secondSceneLoader;
             _firstSceneUnloader = firstSceneUnloader;
             _secondSceneUnloader = secondSceneUnloader;
-            _secondSceneCompleteUnloader = secondSceneCompleteUnloader;
-        }
-
-        void IInitializable.Initialize()
-        {
-            _secondScenePrefetcher.PrefetchAsync(CancellationToken.None)
-                .Forget();
-            _firstScenePrefetcher.PrefetchAsync(CancellationToken.None)
-                .Forget();
         }
 
         async UniTask IAsyncStartable.StartAsync(CancellationToken cancellation)
@@ -128,27 +111,6 @@ namespace SceneLoader.Sample
             {
                 Debug.Log("All scenes was unloaded");
             }
-
-            await UniTask.Delay(TimeSpan.FromSeconds(2), cancellationToken: cancellation);
-
-            var completelyUnloading = await _secondSceneCompleteUnloader.CompletelyUnloadAsync(cancellation);
-
-            completelyUnloading.AsAsyncResult().Match
-            (
-                success: static _ =>
-                {
-                    Debug.LogFormat("Scene complete unloading finished!");
-                },
-                cancellation: static () =>
-                {
-                    Debug.LogWarningFormat("Scene complete unloading was cancelled!");
-                },
-                error: static exception =>
-                {
-                    Debug.LogErrorFormat("Scene complete unloading failed due to error \"{0}\" !", exception);
-                },
-                token: cancellation
-            );
         }
     }
 }

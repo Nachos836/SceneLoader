@@ -2,33 +2,14 @@
 
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace SceneLoader.Core
 {
     partial class SceneRecord
     {
-        private void Configure()
+        internal void Configure()
         {
-            _customFlowNeeded = AssetReferenceScene.CheckRequiredCustomFlow(Target);
-        }
-
-        [UnityEditor.CustomEditor(typeof(SceneRecord))]
-        internal sealed class SceneRecordEditor : UnityEditor.Editor
-        {
-            public override void OnInspectorGUI()
-            {
-                DrawDefaultInspector();
-
-                var sceneRecord = (SceneRecord) target;
-
-                UnityEditor.EditorGUILayout.LabelField("Custom Flow Needed", sceneRecord._customFlowNeeded.ToString());
-                if (GUILayout.Button("Check if custom flow needed") is false) return;
-
-                sceneRecord.Configure();
-
-                UnityEditor.EditorUtility.SetDirty(sceneRecord);
-            }
+            _customFlowNeeded = AssetReferenceScene.CheckRequiredCustomFlow(_target);
         }
 
         internal sealed class SceneModificationPostprocessor : UnityEditor.AssetPostprocessor
@@ -52,7 +33,7 @@ namespace SceneLoader.Core
                     .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
                     .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<SceneRecord>);
 
-                foreach (var record in sceneRecords.Where(record => record.Target.AssetGUID == UnityEditor.AssetDatabase.AssetPathToGUID(assetPath)))
+                foreach (var record in sceneRecords.Where(record => record._target.AssetGUID == UnityEditor.AssetDatabase.AssetPathToGUID(assetPath)))
                 {
                     record.Configure();
 
