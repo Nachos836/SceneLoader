@@ -7,6 +7,7 @@ using UnityEngine;
 using VContainer.Unity;
 
 using SceneLoader.Abstract;
+using VContainer;
 
 namespace SceneLoader.Sample
 {
@@ -17,6 +18,7 @@ namespace SceneLoader.Sample
         private readonly ISceneUnloader<FirstScene> _firstSceneUnloader;
         private readonly ISceneUnloader<SecondScene> _secondSceneUnloader;
 
+        [Inject]
         public SceneLoadingEntry
         (
             ISceneLoader<FirstScene> firstSceneLoader,
@@ -33,11 +35,20 @@ namespace SceneLoader.Sample
 
         async UniTask IAsyncStartable.StartAsync(CancellationToken cancellation)
         {
-            await UniTask.Delay(TimeSpan.FromSeconds(2), cancellationToken: cancellation);
+            Debug.Log("[SceneLoadingEntry] Started!");
 
-            Debug.Log("Scene loading started");
+            var canceled = await UniTask.Delay(TimeSpan.FromSeconds(2), cancellationToken: cancellation)
+                .SuppressCancellationThrow();
+            if (canceled)
+            {
+                Debug.LogWarning("[SceneLoadingEntry] cancelled at: Initial Delay");
+                return;
+            }
 
-            var loadedCount = await UniTask.WhenEach(tasks: new []
+            Debug.Log("[SceneLoadingEntry] Loading Scenes...");
+
+            int loadedCount;
+            (canceled, loadedCount) = await UniTask.WhenEach(tasks: new []
             {
                 _firstSceneLoader.LoadAsync(cancellation)
                     .ContinueWith(static result => UniTask.FromResult(result.AsAsyncResult().Attach(nameof(FirstScene)))),
@@ -50,33 +61,55 @@ namespace SceneLoader.Sample
                 (
                     success: static sceneName =>
                     {
-                        Debug.LogFormat("Scene \"{0}\" loading finished!", sceneName);
+                        Debug.LogFormat("[SceneLoadingEntry] Scene \"{0}\" loading finished!", sceneName);
 
                         return AsyncResult.Success;
                     },
                     cancellation: static () =>
                     {
-                        Debug.LogWarningFormat("Scene loading was cancelled!");
+                        Debug.LogWarningFormat("[SceneLoadingEntry] Scene loading was cancelled!");
 
                         return AsyncResult.Cancel;
                     },
                     error: static exception =>
                     {
-                        Debug.LogErrorFormat("Scene loading failed due to error \"{0}\" !", exception);
+                        Debug.LogErrorFormat("[SceneLoadingEntry] Scene loading failed due to error \"{0}\" !", exception);
 
                         return AsyncResult.FromException(exception);
                     }
                 ).IsSuccessful;
-            }, cancellationToken: cancellation);
+            }, cancellationToken: cancellation)
+                .SuppressCancellationThrow();
+
+            if (canceled)
+            {
+                Debug.LogWarning("[SceneLoadingEntry] cancelled at: Scenes Loading");
+                return;
+            }
 
             if (loadedCount is 2)
             {
-                Debug.Log("All scenes was loaded");
+                Debug.Log("[SceneLoadingEntry] All scenes was loaded");
+            }
+            else
+            {
+                Debug.LogError("[SceneLoadingEntry] Failed to load all scenes");
+                return;
             }
 
-            await UniTask.Delay(TimeSpan.FromSeconds(3), cancellationToken: cancellation);
+            canceled = await UniTask.Delay(TimeSpan.FromSeconds(3), cancellationToken: cancellation)
+                .SuppressCancellationThrow();
 
-            var unloadedCount = await UniTask.WhenEach(tasks: new[]
+            if (canceled)
+            {
+                Debug.LogWarning("[SceneLoadingEntry] cancelled at: Delay after scenes loading");
+                return;
+            }
+
+            Debug.Log("[SceneLoadingEntry] Unloading Scenes...");
+
+            int unloadedCount;
+            (canceled, unloadedCount)  = await UniTask.WhenEach(tasks: new[]
             {
                 _firstSceneUnloader.UnloadAsync(cancellation)
                     .ContinueWith(static result => UniTask.FromResult(result.AsAsyncResult().Attach(nameof(FirstScene)))),
@@ -88,28 +121,39 @@ namespace SceneLoader.Sample
                 (
                     success: static sceneName =>
                     {
-                        Debug.LogFormat("Scene \"{0}\" unloading finished!", sceneName);
+                        Debug.LogFormat("[SceneLoadingEntry] Scene \"{0}\" unloading finished!", sceneName);
 
                         return AsyncResult.Success;
                     },
                     cancellation: static () =>
                     {
-                        Debug.LogWarningFormat("Scene unloading was cancelled!");
+                        Debug.LogWarningFormat("[SceneLoadingEntry] Scene unloading was cancelled!");
 
                         return AsyncResult.Cancel;
                     },
                     error: static exception =>
                     {
-                        Debug.LogErrorFormat("Scene unloading failed due to error \"{0}\" !", exception);
+                        Debug.LogErrorFormat("[SceneLoadingEntry] Scene unloading failed due to error \"{0}\" !", exception);
 
                         return AsyncResult.FromException(exception);
                     }
                 ).IsSuccessful;
-            }, cancellationToken: cancellation);
+            }, cancellationToken: cancellation)
+                .SuppressCancellationThrow();
+
+            if (canceled)
+            {
+                Debug.LogWarning("[SceneLoadingEntry] cancelled at: Scenes Unloading");
+                return;
+            }
 
             if (unloadedCount is 2)
             {
-                Debug.Log("All scenes was unloaded");
+                Debug.Log("[SceneLoadingEntry] All scenes was unloaded");
+            }
+            else
+            {
+                Debug.LogError("[SceneLoadingEntry] Failed to unload all scenes!");
             }
         }
     }

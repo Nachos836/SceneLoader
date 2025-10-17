@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
@@ -8,6 +7,8 @@ using Functional.Core.Outcome;
 using Generic.Core;
 using Generic.Core.FinalStateMachine;
 using Unity.Collections;
+using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 
@@ -86,8 +87,9 @@ namespace SceneLoader.Core.SceneStates
             public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; }
             public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; }
 
-            private NativeArray<int>? _trivialLoadedCollection;
-            private NativeArray<int>? _trivialUnloadedCollection;
+            private NativeArray<int> _trivialLoadedCollection;
+            private NativeArray<int> _trivialUnloadedCollection;
+            private bool _disposed;
 
             public Custom(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority)
                 : base(sceneInstanceReference, target, yieldPoint, priority, customFlowNeeded: true)
@@ -111,21 +113,27 @@ namespace SceneLoader.Core.SceneStates
                 {
                     var (isCanceled, instance) = await _target
                         .LoadSceneAsync(loadMode: LoadSceneMode.Additive, _customFlowNeeded, _priority)
-                        .ToUniTask(progress: null!, timing: _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
+                        .ToUniTask(progress: null!, timing: _yieldPoint, cancellation, cancelImmediately: true,
+                            autoReleaseWhenCanceled: true)
                         .SuppressCancellationThrow();
 
                     if (isCanceled) return AsyncRichResult.Cancel;
 
+                    cancellation.ThrowIfCancellationRequested();
+
                     _sceneInstanceReference.Value = instance;
 
-                    var roots = ImmutableCollectionsMarshal.AsImmutableArray(instance.Scene.GetRootGameObjects());
+                    using var _ = ListPool<GameObject>.Get(out var roots);
+
+                    instance.Scene.GetRootGameObjects(roots);
                     var trivialLoadedCollectionCount = 0;
                     var trivialUnloadedCollectionCount = 0;
 
-                    var customLoadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneLoadedDetectionCustom>(roots.Length);
-                    var trivialLoadedCollectionBuilder = new NativeArray<int>(roots.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                    var customUnloadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneUnloadedDetectionCustom>(roots.Length);
-                    var trivialUnloadedCollectionBuilder = new NativeArray<int>(roots.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    var customLoadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneLoadedDetectionCustom>(roots.Count);
+                    _trivialLoadedCollection = new NativeArray<int>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+
+                    var customUnloadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneUnloadedDetectionCustom>(roots.Count);
+                    _trivialUnloadedCollection = new NativeArray<int>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
                     foreach (var root in roots)
                     {
@@ -135,7 +143,7 @@ namespace SceneLoader.Core.SceneStates
                         }
                         else if (root.TryGetComponent(out ISceneLoadedDetection loadedTrivial))
                         {
-                            trivialLoadedCollectionBuilder[trivialLoadedCollectionCount] = loadedTrivial.Id;
+                            _trivialLoadedCollection[trivialLoadedCollectionCount] = loadedTrivial.Id;
                             ++trivialLoadedCollectionCount;
                         }
 
@@ -145,7 +153,7 @@ namespace SceneLoader.Core.SceneStates
                         }
                         else if (root.TryGetComponent(out ISceneUnloadedDetection unloadedTrivial))
                         {
-                            trivialUnloadedCollectionBuilder[trivialUnloadedCollectionCount] = unloadedTrivial.Id;
+                            _trivialUnloadedCollection[trivialUnloadedCollectionCount] = unloadedTrivial.Id;
                             ++trivialUnloadedCollectionCount;
                         }
                     }
@@ -153,39 +161,54 @@ namespace SceneLoader.Core.SceneStates
                     CustomLoadedCollection = customLoadedCollectionBuilder.DrainToImmutable();
                     if (trivialLoadedCollectionCount != 0)
                     {
-                        _trivialLoadedCollection = trivialLoadedCollectionBuilder;
-                        TrivialLoadedCollection = trivialLoadedCollectionBuilder.AsReadOnly(trivialLoadedCollectionCount);
+                        TrivialLoadedCollection = _trivialLoadedCollection.AsReadOnly(trivialLoadedCollectionCount);
                     }
                     else
                     {
-                        trivialLoadedCollectionBuilder.Dispose();
+                        _trivialLoadedCollection.Dispose();
                     }
 
                     CustomUnloadedCollection = customUnloadedCollectionBuilder.DrainToImmutable();
                     if (trivialUnloadedCollectionCount != 0)
                     {
-                        _trivialUnloadedCollection = trivialUnloadedCollectionBuilder;
-                        TrivialUnloadedCollection = trivialUnloadedCollectionBuilder.AsReadOnly(trivialUnloadedCollectionCount);
+                        TrivialUnloadedCollection = _trivialUnloadedCollection.AsReadOnly(trivialUnloadedCollectionCount);
                     }
                     else
                     {
-                        trivialUnloadedCollectionBuilder.Dispose();
+                        _trivialUnloadedCollection.Dispose();
                     }
 
                     return AsyncRichResult.Success;
                 }
+                catch (OperationCanceledException)
+                {
+                    Dispose();
+
+                    return AsyncRichResult.Cancel;
+                }
                 catch (Exception exception)
                 {
+                    Dispose();
+
                     return exception;
                 }
             }
 
             public void Dispose()
             {
-                _trivialLoadedCollection?.Dispose();
-                _trivialLoadedCollection = null;
-                _trivialUnloadedCollection?.Dispose();
-                _trivialUnloadedCollection = null;
+                if (_disposed) return;
+
+                _disposed = true;
+
+                if (_trivialLoadedCollection.IsCreated)
+                {
+                    _trivialLoadedCollection.Dispose();
+                }
+
+                if (_trivialUnloadedCollection.IsCreated)
+                {
+                    _trivialUnloadedCollection.Dispose();
+                }
             }
         }
     }
