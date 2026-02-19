@@ -1,12 +1,14 @@
 ﻿namespace SceneLoader.Abstract.Internal
 {
+    /// <inheritdoc />
     /// <summary>
-    /// Simply Enable GameObject before Scene Edited
+    /// Enables GameObject before Scene Edited
     /// </summary>
-    public partial interface IBeforeSceneEdited : ISceneCustomProcessing { }
+    internal partial interface IBeforeSceneEdited : ISceneCustomProcessing { }
 
+    /// <inheritdoc />
     /// <summary>
     /// Execute Custom Callback on GameObject before Scene Edited
     /// </summary>
-    public partial interface IBeforeSceneEditedCustom : ISceneCustomProcessing { }
+    internal partial interface IBeforeSceneEditedCustom : ISceneCustomProcessing { }
 }

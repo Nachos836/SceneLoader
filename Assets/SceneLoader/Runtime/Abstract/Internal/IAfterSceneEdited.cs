@@ -1,12 +1,14 @@
 ﻿namespace SceneLoader.Abstract.Internal
 {
+    /// <inheritdoc />
     /// <summary>
-    /// Simply Disable GameObject after Scene Edited
+    /// Disables GameObject after Scene Edited
     /// </summary>
-    public partial interface IAfterSceneEdited : ISceneCustomProcessing { }
+    internal partial interface IAfterSceneEdited : ISceneCustomProcessing { }
 
+    /// <inheritdoc />
     /// <summary>
     /// Execute Custom Callback on GameObject after Scene Edited
     /// </summary>
-    public partial interface IAfterSceneEditedCustom : ISceneCustomProcessing { }
+    internal partial interface IAfterSceneEditedCustom : ISceneCustomProcessing { }
 }

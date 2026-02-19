@@ -5,8 +5,10 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+using static UnityEditor.EnterPlayModeOptions;
 using static UnityEditor.SceneManagement.EditorSceneManager;
 
+using Debug = UnityEngine.Debug;
 using Scene = UnityEngine.SceneManagement.Scene;
 
 namespace SceneLoader.Editor
@@ -20,11 +22,24 @@ namespace SceneLoader.Editor
         private static readonly SceneSavedCallback BeforeSceneSavedCallback = BeforeSceneEdited;
         private static readonly SceneSavingCallback AfterSceneEditedCallback = AfterSceneEdited;
 
+        private static bool DomainReloadEnabled
+        {
+            get
+            {
+                if (EditorSettings.enterPlayModeOptionsEnabled is false) return false;
+
+                return (EditorSettings.enterPlayModeOptions & DisableDomainReload) == 0;
+            }
+        }
+
         static SceneWorkflow()
         {
-            sceneOpened -= BeforeSceneEditedCallback;
-            sceneSaved -= BeforeSceneSavedCallback;
-            sceneSaving -= AfterSceneEditedCallback;
+            if (DomainReloadEnabled)
+            {
+                sceneOpened -= BeforeSceneEditedCallback;
+                sceneSaved -= BeforeSceneSavedCallback;
+                sceneSaving -= AfterSceneEditedCallback;
+            }
 
             sceneSaving += AfterSceneEditedCallback;
             sceneSaved += BeforeSceneSavedCallback;

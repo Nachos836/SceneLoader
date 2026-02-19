@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 
 namespace SceneLoader.Core.SceneStates
 {
-    using Abstract;
+    using Abstract.Internal;
     using Runtime.Core.Internal;
 
     internal abstract class Prefetched : IState
@@ -83,12 +83,12 @@ namespace SceneLoader.Core.SceneStates
         public sealed class Custom : Prefetched, IState.WithEnterAction, IDisposable
         {
             public ImmutableArray<ISceneLoadedDetectionCustom> CustomLoadedCollection { get; private set; }
-            public NativeArray<int>.ReadOnly TrivialLoadedCollection { get; private set; }
+            public NativeArray<EntityId>.ReadOnly TrivialLoadedCollection { get; private set; }
             public ImmutableArray<ISceneUnloadedDetectionCustom> CustomUnloadedCollection { get; private set; }
-            public NativeArray<int>.ReadOnly TrivialUnloadedCollection { get; private set; }
+            public NativeArray<EntityId>.ReadOnly TrivialUnloadedCollection { get; private set; }
 
-            private NativeArray<int> _trivialLoadedCollection;
-            private NativeArray<int> _trivialUnloadedCollection;
+            private NativeArray<EntityId> _trivialLoadedCollection;
+            private NativeArray<EntityId> _trivialUnloadedCollection;
             private bool _disposed;
 
             public Custom(ValueReference<SceneInstance> sceneInstanceReference, AssetReferenceScene target, PlayerLoopTiming yieldPoint, ushort priority)
@@ -130,31 +130,31 @@ namespace SceneLoader.Core.SceneStates
                     var trivialUnloadedCollectionCount = 0;
 
                     var customLoadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneLoadedDetectionCustom>(roots.Count);
-                    _trivialLoadedCollection = new NativeArray<int>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    _trivialLoadedCollection = new NativeArray<EntityId>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
                     var customUnloadedCollectionBuilder = ImmutableArray.CreateBuilder<ISceneUnloadedDetectionCustom>(roots.Count);
-                    _trivialUnloadedCollection = new NativeArray<int>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    _trivialUnloadedCollection = new NativeArray<EntityId>(roots.Count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
 
                     foreach (var root in roots)
                     {
-                        if (root.TryGetComponent(out ISceneLoadedDetectionCustom loadedCustom))
-                        {
-                            customLoadedCollectionBuilder.Add(loadedCustom);
-                        }
-                        else if (root.TryGetComponent(out ISceneLoadedDetection loadedTrivial))
+                        if (root.TryGetComponent(out ISceneLoadedDetection loadedTrivial))
                         {
                             _trivialLoadedCollection[trivialLoadedCollectionCount] = loadedTrivial.Id;
                             ++trivialLoadedCollectionCount;
                         }
-
-                        if (root.TryGetComponent(out ISceneUnloadedDetectionCustom unloadedCustom))
+                        else if (root.TryGetComponent(out ISceneLoadedDetectionCustom loadedCustom))
                         {
-                            customUnloadedCollectionBuilder.Add(unloadedCustom);
+                            customLoadedCollectionBuilder.Add(loadedCustom);
                         }
-                        else if (root.TryGetComponent(out ISceneUnloadedDetection unloadedTrivial))
+
+                        if (root.TryGetComponent(out ISceneUnloadedDetection unloadedTrivial))
                         {
                             _trivialUnloadedCollection[trivialUnloadedCollectionCount] = unloadedTrivial.Id;
                             ++trivialUnloadedCollectionCount;
+                        }
+                        else if (root.TryGetComponent(out ISceneUnloadedDetectionCustom unloadedCustom))
+                        {
+                            customUnloadedCollectionBuilder.Add(unloadedCustom);
                         }
                     }
 

@@ -1,15 +1,16 @@
 ﻿#if UNITY_EDITOR
 
 using Functional.Core;
+using UnityEngine;
 
 namespace SceneLoader.Abstract.Internal
 {
-    public partial interface IBeforeSceneEdited
+    partial interface IBeforeSceneEdited
     {
-        protected internal int IdForEditor { get; }
+        protected internal EntityId IdForEditor { get; }
     }
 
-    public partial interface IBeforeSceneEditedCustom
+    partial interface IBeforeSceneEditedCustom
     {
         protected internal Result ExecuteInEditor();
     }

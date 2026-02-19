@@ -1,12 +1,12 @@
 ﻿#if UNITY_EDITOR
 
-namespace SceneLoader.Abstract
-{
-    using Internal;
+using UnityEngine;
 
-    public partial interface ISceneUnloadedDetection : IAfterSceneEdited
+namespace SceneLoader.Abstract.Internal
+{
+    partial interface ISceneUnloadedDetection : IAfterSceneEdited
     {
-        int IAfterSceneEdited.IdForEditor => Id;
+        EntityId IAfterSceneEdited.IdForEditor => Id;
     }
 }
 

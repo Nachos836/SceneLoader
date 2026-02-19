@@ -69,6 +69,7 @@ namespace SceneLoader.Core.SceneStates
                 var trivialActivatedCollection = _prefetchedState.TrivialLoadedCollection;
                 var customActivatedCollection = _prefetchedState.CustomLoadedCollection;
                 if (customActivatedCollection.IsDefaultOrEmpty) goto TrivialFlow;
+
                 foreach (ref readonly var candidate in customActivatedCollection.AsSpan())
                 {
                     if (cancellation.IsCancellationRequested) return UniTask.FromResult(AsyncRichResult.Cancel);

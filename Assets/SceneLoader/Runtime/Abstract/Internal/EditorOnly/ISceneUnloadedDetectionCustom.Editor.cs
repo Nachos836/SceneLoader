@@ -2,11 +2,9 @@
 
 using Functional.Core;
 
-namespace SceneLoader.Abstract
+namespace SceneLoader.Abstract.Internal
 {
-    using Internal;
-
-    public partial interface ISceneUnloadedDetectionCustom : IAfterSceneEditedCustom
+    partial interface ISceneUnloadedDetectionCustom : IAfterSceneEditedCustom
     {
         Result IAfterSceneEditedCustom.ExecuteInEditor() => Execute();
     }
