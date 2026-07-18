@@ -17,6 +17,7 @@ namespace SceneLoader.Core
 {
     partial class SceneRecord
     {
+        [PublicAPI]
         public abstract class CodeBindings<TSceneKey>:
             ISceneExplicitPrefetcher<TSceneKey>,
             ISceneExplicitCompleteUnloader<TSceneKey>,
@@ -144,7 +145,8 @@ namespace SceneLoader.Core
                 return await pending;
             }
 
-            [MustDisposeResource] [MustUseReturnValue]
+            [MustUseReturnValue]
+            [MustDisposeResource]
             IDisposable ISceneUnloadedEvent<TSceneKey>.Subscribe(Action whenUnloaded)
             {
                 WhenUnloaded += whenUnloaded;
@@ -152,7 +154,8 @@ namespace SceneLoader.Core
                 return Disposable.Create(() => WhenUnloaded -= whenUnloaded);
             }
 
-            [MustDisposeResource] [MustUseReturnValue]
+            [MustUseReturnValue]
+            [MustDisposeResource]
             IDisposable ISceneLoadedEvent<TSceneKey>.Subscribe(Action whenLoaded)
             {
                 WhenLoaded += whenLoaded;

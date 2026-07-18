@@ -1,8 +1,8 @@
 {
 	"name": "com.nachos836.scene-loader",
 	"displayName": "Unity Scene Loader",
-	"version": "0.12.0",
-	"unity": "2022.3",
+	"version": "0.13.0",
+	"unity": "6000.5",
 	"description": "Declarative Unity Scene Loader implementation with IOC in mind",
 	"keywords": ["Scene", "Loading", "Scene Loader"],
 	"license": "MIT",
@@ -20,12 +20,11 @@
 		"revision": "master"
 	},
 	"dependencies": {
-		"com.unity.addressables": "2.9.0",
-		"com.unity.collections": "2.6.4",
-		"com.cysharp.unitask": "2.5.10",
-		"org.nuget.system.collections.immutable": "10.0.3",
+		"com.unity.addressables": "3.1.0",
+		"com.unity.collections": "6.5.0",
+		"com.cysharp.unitask": "2.5.11",
 		"com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional#0.5.3",
-		"com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.9.0"
+		"com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.10.0"
 	},
 	"scopedRegistries": [
 		{
@@ -33,12 +32,7 @@
 			"url": "https://package.openupm.com",
 			"scopes": [
 				"package.openupm.com",
-				"com.cysharp.unitask",
-				"org.nuget.system.buffers",
-				"org.nuget.system.collections.immutable",
-				"org.nuget.system.memory",
-				"org.nuget.system.numerics.vectors",
-				"org.nuget.system.runtime.compilerservices.unsafe"
+				"com.cysharp.unitask"
 			]
 		}
 	]

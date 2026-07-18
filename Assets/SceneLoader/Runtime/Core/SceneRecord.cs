@@ -8,6 +8,7 @@ namespace SceneLoader.Core
 {
     using Abstract;
 
+    [PublicAPI]
     [CreateAssetMenu(menuName = "Scene/Scene Record")]
     public sealed partial class SceneRecord : ScriptableObject
     {

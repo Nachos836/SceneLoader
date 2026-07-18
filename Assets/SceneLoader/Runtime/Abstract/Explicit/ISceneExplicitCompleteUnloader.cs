@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
+using JetBrains.Annotations;
 
 namespace SceneLoader.Abstract.Explicit
 {
@@ -9,6 +10,7 @@ namespace SceneLoader.Abstract.Explicit
     /// Use only when it's really necessary to be explicit about complete scene unloading
     /// </summary>
     /// <typeparam name="TSceneKey">TSceneKey is used for the sake of polymorphism. It makes it easy to find an appropriate type when using DI</typeparam>
+    [PublicAPI]
     public interface ISceneExplicitCompleteUnloader<in TSceneKey> where TSceneKey : class, ISceneKey
     {
         UniTask<AsyncRichResult> CompletelyUnloadAsync(CancellationToken cancellation = default);

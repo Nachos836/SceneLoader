@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BundledAssetGroupSchema
   m_EditorClassIdentifier: 
   m_Group: {fileID: 0}
+  m_SchemaIsEnabled: 1
   m_InternalBundleIdMode: 1
   m_Compression: 1
   m_IncludeAddressInCatalog: 1
@@ -59,6 +60,7 @@ MonoBehaviour:
   m_Name: ContentUpdateGroupSchema
   m_EditorClassIdentifier: 
   m_Group: {fileID: 0}
+  m_SchemaIsEnabled: 1
   m_StaticContent: 0
 --- !u!114 &11400000
 MonoBehaviour:

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Default Local Group_BundledAssetGroupSchema
   m_EditorClassIdentifier: 
   m_Group: {fileID: 11400000, guid: f92d5812af904424da510f27971b647d, type: 2}
+  m_SchemaIsEnabled: 1
   m_InternalBundleIdMode: 1
   m_Compression: 1
   m_IncludeAddressInCatalog: 1
