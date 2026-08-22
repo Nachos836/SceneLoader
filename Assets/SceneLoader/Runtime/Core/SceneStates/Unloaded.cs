@@ -1,12 +1,13 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
 using Generic.Core;
 using Generic.Core.FinalStateMachine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceProviders;
-
-using Addressable = UnityEngine.AddressableAssets.Addressables;
 
 namespace SceneLoader.Core.SceneStates
 {
@@ -29,7 +30,7 @@ namespace SceneLoader.Core.SceneStates
 
             try
             {
-                var (isCanceled, instance) = await Addressable.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
+                var (isCanceled, instance) = await Addressables.UnloadSceneAsync(scene.Value, autoReleaseHandle: true)
                     .ToUniTask(progress: null!, _yieldPoint, cancellation, cancelImmediately: true, autoReleaseWhenCanceled: true)
                     .SuppressCancellationThrow();
 

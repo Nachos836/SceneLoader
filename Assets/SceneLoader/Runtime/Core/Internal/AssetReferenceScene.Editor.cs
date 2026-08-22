@@ -6,6 +6,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using UnityEngine.AddressableAssets;
 
+// ReSharper disable once CheckNamespace
 namespace SceneLoader.Core
 {
     using Abstract.Internal;

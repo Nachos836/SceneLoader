@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
 
+#nullable enable
+
 using System;
 using System.Linq;
 

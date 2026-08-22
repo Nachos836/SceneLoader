@@ -11,10 +11,8 @@
       "version": "https://github.com/Nachos836/Generic.git?path=Assets/dotNetCompat",
       "depth": 0,
       "source": "git",
-      "dependencies": {
-        "org.nuget.system.runtime.compilerservices.unsafe": "6.1.2"
-      },
-      "hash": "7316eaf6a3fed7ce2f74e40a90a3f7a6e4981f4b"
+      "dependencies": {},
+      "hash": "9d7d873697ca024c70f42935bf932d14225b9b78"
     },
     "com.nachos836.editor-utils": {
       "version": "https://github.com/Nachos836/Generic.git?path=Assets/EditorUtils",
@@ -41,18 +39,18 @@
         "com.cysharp.unitask": "2.5.11",
         "com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional#0.4.0"
       },
-      "hash": "6456c9d25f2075fff2ff03c94d2887ec3a447395"
+      "hash": "9d7d873697ca024c70f42935bf932d14225b9b78"
     },
     "com.nachos836.scene-loader": {
       "version": "file:../Assets/SceneLoader",
       "depth": 0,
       "source": "local",
       "dependencies": {
-        "com.unity.addressables": "3.1.0",
+        "com.unity.addressables": "4.0.1",
         "com.unity.collections": "6.5.0",
         "com.cysharp.unitask": "2.5.11",
         "com.nachos836.functional": "https://github.com/Nachos836/Functional.git?path=Assets/Functional#0.5.3",
-        "com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.10.0"
+        "com.nachos836.generic": "https://github.com/Nachos836/Generic.git?path=Assets/Generic#0.11.1"
       }
     },
     "com.pelerin.editor-dark-mode-extended": {
@@ -63,7 +61,7 @@
       "hash": "c28482179bcbce17775b8f1d4dff9de7585394dc"
     },
     "com.unity.addressables": {
-      "version": "3.1.0",
+      "version": "4.0.1",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -73,13 +71,13 @@
         "com.unity.modules.jsonserialize": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
         "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.scriptablebuildpipeline": "3.1.1",
+        "com.unity.scriptablebuildpipeline": "4.0.0",
         "com.unity.modules.unitywebrequestassetbundle": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },
     "com.unity.burst": {
-      "version": "1.8.29",
+      "version": "1.8.30",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -101,7 +99,7 @@
     },
     "com.unity.editorcoroutines": {
       "version": "1.1.0",
-      "depth": 0,
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
@@ -122,7 +120,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.27",
+      "version": "2.0.28",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -164,7 +162,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.scriptablebuildpipeline": {
-      "version": "3.1.1",
+      "version": "4.0.0",
       "depth": 2,
       "source": "registry",
       "dependencies": {
@@ -206,7 +204,7 @@
       }
     },
     "com.yasirkula.ingamedebugconsole": {
-      "version": "1.8.8",
+      "version": "1.8.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -218,21 +216,6 @@
       "source": "registry",
       "dependencies": {},
       "url": "https://package.openupm.com"
-    },
-    "org.nuget.system.runtime.compilerservices.unsafe": {
-      "version": "6.1.2",
-      "depth": 1,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://package.openupm.com"
-    },
-    "com.unity.modules.adaptiveperformance": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.subsystems": "1.0.0"
-      }
     },
     "com.unity.modules.assetbundle": {
       "version": "1.0.0",
@@ -283,14 +266,6 @@
       "depth": 2,
       "source": "builtin",
       "dependencies": {}
-    },
-    "com.unity.modules.subsystems": {
-      "version": "1.0.0",
-      "depth": 1,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.jsonserialize": "1.0.0"
-      }
     },
     "com.unity.modules.ui": {
       "version": "1.0.0",

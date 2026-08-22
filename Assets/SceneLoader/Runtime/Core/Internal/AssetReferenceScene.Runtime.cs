@@ -2,6 +2,7 @@
 
 #nullable enable
 
+// ReSharper disable once CheckNamespace
 namespace SceneLoader.Core
 {
     public sealed partial class AssetReferenceScene

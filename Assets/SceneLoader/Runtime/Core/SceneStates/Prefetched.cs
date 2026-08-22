@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Immutable;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -14,8 +16,8 @@ using UnityEngine.SceneManagement;
 
 namespace SceneLoader.Core.SceneStates
 {
+    using Internal;
     using Abstract.Internal;
-    using Runtime.Core.Internal;
 
     internal abstract class Prefetched : IState
     {

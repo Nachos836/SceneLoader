@@ -1,6 +1,8 @@
+#nullable enable
+
 using Unity.Collections;
 
-namespace SceneLoader.Runtime.Core.Internal
+namespace SceneLoader.Core.Internal
 {
     internal static class NativeArrayExtensions
     {

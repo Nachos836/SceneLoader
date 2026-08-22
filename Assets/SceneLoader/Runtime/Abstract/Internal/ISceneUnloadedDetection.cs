@@ -1,4 +1,6 @@
-﻿using Functional.Core;
+﻿#nullable enable
+
+using Functional.Core;
 using UnityEngine;
 
 namespace SceneLoader.Abstract.Internal

@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿#nullable enable
+
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Functional.Async;
 using JetBrains.Annotations;

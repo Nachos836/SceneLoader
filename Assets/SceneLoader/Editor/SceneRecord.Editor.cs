@@ -1,9 +1,13 @@
 #if UNITY_EDITOR
 
+#nullable enable
+
 using UnityEngine.UIElements;
 
-namespace SceneLoader.Core
+namespace SceneLoader.Editor
 {
+    using Core;
+
     [UnityEditor.CustomEditor(typeof(SceneRecord))]
     internal sealed class SceneRecordEditor : UnityEditor.Editor
     {

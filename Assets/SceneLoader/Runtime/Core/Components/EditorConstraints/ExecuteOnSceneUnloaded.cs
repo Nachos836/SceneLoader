@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿#nullable enable
+
+using System.Diagnostics;
 using UnityEngine;
 
 namespace SceneLoader.Core.Components.EditorConstraints
